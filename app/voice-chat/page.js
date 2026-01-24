@@ -229,144 +229,420 @@ export default function VoiceChat() {
   }
 
   // ==============================
-  // UI RENDER
+  // UI RENDER - Modern Minimalist Design
   // ==============================
   return (
-    <div>
-      <nav className="nav">
-        <div className="nav-content">
-          <h2>Build For Impact</h2>
-          <ul className="nav-links">
-            <li><Link href="/">Home</Link></li>
-            <li><Link href="/chat">Chat</Link></li>
-            <li><Link href="/voice-chat">Voice Chat</Link></li>
+    <div style={{
+      minHeight: '100vh',
+      background: '#f5f5f5',
+      display: 'flex',
+      flexDirection: 'column'
+    }}>
+      {/* Navigation Bar */}
+      <nav style={{
+        padding: '1rem 2rem',
+        background: 'white',
+        borderBottom: '1px solid #e5e7eb',
+        boxShadow: '0 2px 4px rgba(0,0,0,0.02)'
+      }}>
+        <div style={{
+          maxWidth: '1200px',
+          margin: '0 auto',
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center'
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+            <div style={{
+              width: '40px',
+              height: '40px',
+              borderRadius: '50%',
+              background: 'linear-gradient(135deg, #ff6b35 0%, #f7931e 100%)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              fontSize: '1.5rem'
+            }}>
+              🔊
+            </div>
+            <h2 style={{ margin: 0, fontSize: '1.5rem', fontWeight: '600', color: '#2d3748' }}>
+              Build For Impact
+            </h2>
+          </div>
+          <ul style={{
+            display: 'flex',
+            listStyle: 'none',
+            margin: 0,
+            padding: 0,
+            gap: '2rem',
+            alignItems: 'center'
+          }}>
+            <li>
+              <Link 
+                href="/" 
+                style={{ 
+                  color: '#2d3748', 
+                  textDecoration: 'none', 
+                  fontWeight: '500', 
+                  transition: 'color 0.2s',
+                  padding: '0.5rem 0',
+                  borderBottom: '2px solid transparent'
+                }}
+                onMouseEnter={(e) => e.target.style.color = '#ff6b35'}
+                onMouseLeave={(e) => e.target.style.color = '#2d3748'}
+              >
+                Home
+              </Link>
+            </li>
+            <li>
+              <Link 
+                href="/chat" 
+                style={{ 
+                  color: '#2d3748', 
+                  textDecoration: 'none', 
+                  fontWeight: '500', 
+                  transition: 'color 0.2s',
+                  padding: '0.5rem 0',
+                  borderBottom: '2px solid transparent'
+                }}
+                onMouseEnter={(e) => e.target.style.color = '#ff6b35'}
+                onMouseLeave={(e) => e.target.style.color = '#2d3748'}
+              >
+                Chat
+              </Link>
+            </li>
+            <li>
+              <Link 
+                href="/document-chat" 
+                style={{ 
+                  color: '#2d3748', 
+                  textDecoration: 'none', 
+                  fontWeight: '500', 
+                  transition: 'color 0.2s',
+                  padding: '0.5rem 0',
+                  borderBottom: '2px solid transparent'
+                }}
+                onMouseEnter={(e) => e.target.style.color = '#ff6b35'}
+                onMouseLeave={(e) => e.target.style.color = '#2d3748'}
+              >
+                Document Chat
+              </Link>
+            </li>
+            <li>
+              <Link 
+                href="/voice-chat" 
+                style={{ 
+                  color: '#ff6b35', 
+                  textDecoration: 'none', 
+                  fontWeight: '600',
+                  padding: '0.5rem 0',
+                  borderBottom: '2px solid #ff6b35'
+                }}
+              >
+                Voice Chat
+              </Link>
+            </li>
+            <li>
+              <Link 
+                href="/video-chat" 
+                style={{ 
+                  color: '#2d3748', 
+                  textDecoration: 'none', 
+                  fontWeight: '500', 
+                  transition: 'color 0.2s',
+                  padding: '0.5rem 0',
+                  borderBottom: '2px solid transparent'
+                }}
+                onMouseEnter={(e) => e.target.style.color = '#ff6b35'}
+                onMouseLeave={(e) => e.target.style.color = '#2d3748'}
+              >
+                Video Chat
+              </Link>
+            </li>
+            <li>
+              <Link 
+                href="/faq" 
+                style={{ 
+                  color: '#2d3748', 
+                  textDecoration: 'none', 
+                  fontWeight: '500', 
+                  transition: 'color 0.2s',
+                  padding: '0.5rem 0',
+                  borderBottom: '2px solid transparent'
+                }}
+                onMouseEnter={(e) => e.target.style.color = '#ff6b35'}
+                onMouseLeave={(e) => e.target.style.color = '#2d3748'}
+              >
+                FAQ
+              </Link>
+            </li>
+            <li>
+              <Link 
+                href="/company-review" 
+                style={{ 
+                  color: '#2d3748', 
+                  textDecoration: 'none', 
+                  fontWeight: '500', 
+                  transition: 'color 0.2s',
+                  padding: '0.5rem 0',
+                  borderBottom: '2px solid transparent'
+                }}
+                onMouseEnter={(e) => e.target.style.color = '#ff6b35'}
+                onMouseLeave={(e) => e.target.style.color = '#2d3748'}
+              >
+                Company Review
+              </Link>
+            </li>
+            <li>
+              <Link 
+                href="/reviews" 
+                style={{ 
+                  color: '#2d3748', 
+                  textDecoration: 'none', 
+                  fontWeight: '500', 
+                  transition: 'color 0.2s',
+                  padding: '0.5rem 0',
+                  borderBottom: '2px solid transparent'
+                }}
+                onMouseEnter={(e) => e.target.style.color = '#ff6b35'}
+                onMouseLeave={(e) => e.target.style.color = '#2d3748'}
+              >
+                View Reviews
+              </Link>
+            </li>
           </ul>
         </div>
       </nav>
 
-      <div className="chat-page-container">
-        <div className="chat-wrapper">
-          <div className="chat-header">
-            <div className="chat-header-top">
-              <div>
-                <h1>Voice & Text Chat</h1>
-                <p>Speak or type to ask about your rights and contracts</p>
-              </div>
-              <div className="language-selector">
-                <label htmlFor="language-select" className="language-label">Output Language:</label>
-                <select
-                  id="language-select"
-                  value={selectedLanguage}
-                  onChange={(e) => setSelectedLanguage(e.target.value)}
-                  className="language-dropdown"
-                  disabled={isLoading || isPlaying} // Disable dropdown while playing
-                >
-                  {languages.map(lang => (
-                    <option key={lang.code} value={lang.code}>{lang.name}</option>
-                  ))}
-                </select>
-              </div>
-            </div>
-          </div>
+      {/* Main Content */}
+      <main style={{
+        flex: 1,
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center',
+        padding: '3rem 2rem',
+        maxWidth: '800px',
+        margin: '0 auto',
+        width: '100%'
+      }}>
+        {/* Main Title */}
+        <h1 style={{
+          fontSize: '2.5rem',
+          fontWeight: '700',
+          color: '#2d3748',
+          marginBottom: '3rem',
+          textAlign: 'center'
+        }}>
+          How can I help you today?
+        </h1>
 
-          <div className="chat-messages-container">
-            <div className="chat-messages">
-              {messages.map((message) => (
-                <div key={message.id} className={`message-bubble ${message.type}`}>
-                  <div className="message-content">{message.text}</div>
-                  {message.audioUrl && (
-                    <button
-                      className="mt-2 text-xs flex items-center gap-1 font-bold text-blue-600 hover:text-blue-800"
-                      // === DISABLE REPLAY IF PLAYING ===
-                      onClick={() => playAudio(message.audioUrl)}
-                      disabled={isPlaying} 
-                      style={{ 
-                          marginTop: '8px', 
-                          background: 'none', 
-                          border: 'none', 
-                          cursor: isPlaying ? 'not-allowed' : 'pointer',
-                          opacity: isPlaying ? 0.5 : 1
-                      }}
-                    >
-                      {isPlaying ? '🔊 Playing...' : '🔊 Replay Audio'}
-                    </button>
-                  )}
-                  <button
-                    className="copy-button"
-                    onClick={() => copyToClipboard(message.text)}
-                    title="Copy message"
-                  >
-                    📋
-                  </button>
+        {/* Large Microphone Button */}
+        <button
+          onMouseDown={startRecording}
+          onMouseUp={stopRecordingAndSend}
+          onTouchStart={startRecording}
+          onTouchEnd={stopRecordingAndSend}
+          disabled={isLoading || isPlaying}
+          style={{
+            width: '120px',
+            height: '120px',
+            borderRadius: '50%',
+            border: 'none',
+            background: isRecording 
+              ? 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)' 
+              : 'linear-gradient(135deg, #ff6b35 0%, #f7931e 100%)',
+            color: 'white',
+            fontSize: '3rem',
+            cursor: (isLoading || isPlaying) ? 'not-allowed' : 'pointer',
+            boxShadow: isRecording 
+              ? '0 8px 24px rgba(239, 68, 68, 0.4)' 
+              : '0 8px 24px rgba(255, 107, 53, 0.3)',
+            transition: 'all 0.3s ease',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            marginBottom: '2rem',
+            transform: isRecording ? 'scale(1.1)' : 'scale(1)',
+            opacity: (isLoading || isPlaying) ? 0.6 : 1
+          }}
+        >
+          🎤
+        </button>
+
+        {/* Active Recording Controls */}
+        {isRecording && (
+          <div style={{
+            width: '100%',
+            maxWidth: '600px',
+            padding: '1.5rem',
+            borderRadius: '12px',
+            background: 'white',
+            border: '1px solid #e5e7eb',
+            boxShadow: '0 4px 12px rgba(0,0,0,0.08)',
+            marginBottom: '1rem'
+          }}>
+            <div style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              gap: '2rem'
+            }}>
+              {/* Volume Control */}
+              <div style={{ flex: 1 }}>
+                <div style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.75rem',
+                  marginBottom: '0.5rem'
+                }}>
+                  <span style={{ fontSize: '0.9rem', fontWeight: '600', color: '#2d3748' }}>VOLUME</span>
+                  <span style={{ fontSize: '1.2rem' }}>🔊</span>
                 </div>
-              ))}
-              {isLoading && !isRecording && (
-                <div className="message-bubble bot">
-                  <div className="message-content">
-                    <span className="typing-indicator"><span></span><span></span><span></span></span>
+                <div style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.5rem',
+                  width: '100%'
+                }}>
+                  <span style={{ fontSize: '1rem' }}>🔊</span>
+                  <div style={{
+                    flex: 1,
+                    height: '8px',
+                    background: '#e5e7eb',
+                    borderRadius: '4px',
+                    position: 'relative',
+                    overflow: 'hidden'
+                  }}>
+                    <div style={{
+                      width: '70%',
+                      height: '100%',
+                      background: '#10b981',
+                      borderRadius: '4px',
+                      transition: 'width 0.1s'
+                    }} />
                   </div>
+                  <span style={{ fontSize: '1rem' }}>🔊</span>
                 </div>
-              )}
+              </div>
+
+              {/* Stop Listening Button */}
+              <button
+                onClick={stopRecordingAndSend}
+                style={{
+                  padding: '0.75rem 1.5rem',
+                  borderRadius: '10px',
+                  border: 'none',
+                  background: '#ef4444',
+                  color: 'white',
+                  fontSize: '0.95rem',
+                  fontWeight: '600',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.5rem',
+                  boxShadow: '0 4px 12px rgba(239, 68, 68, 0.3)',
+                  transition: 'all 0.2s'
+                }}
+                onMouseEnter={(e) => {
+                  e.target.style.background = '#dc2626'
+                  e.target.style.transform = 'translateY(-2px)'
+                }}
+                onMouseLeave={(e) => {
+                  e.target.style.background = '#ef4444'
+                  e.target.style.transform = 'translateY(0)'
+                }}
+              >
+                <div style={{
+                  width: '12px',
+                  height: '12px',
+                  borderRadius: '50%',
+                  background: 'white'
+                }} />
+                Stop Listening
+              </button>
             </div>
           </div>
+        )}
 
-          <div className="chat-input-wrapper" style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-            
-            {/* === MAIN BUTTON === */}
-            <button
-              onMouseDown={startRecording}
-              onMouseUp={stopRecordingAndSend}
-              onTouchStart={startRecording}
-              onTouchEnd={stopRecordingAndSend}
-              // === DISABLE WHILE PLAYING ===
-              disabled={isLoading || isPlaying} 
+        {/* Status Indicator */}
+        {isRecording && (
+          <p style={{
+            fontSize: '0.9rem',
+            color: '#ff6b35',
+            fontWeight: '500',
+            marginTop: '1rem',
+            textAlign: 'center'
+          }}>
+            LISTENING FOR YOUR VOICE...
+          </p>
+        )}
+
+        {/* Language Selector (Hidden when recording) */}
+        {!isRecording && (
+          <div style={{
+            marginTop: '2rem',
+            padding: '1rem 1.5rem',
+            borderRadius: '10px',
+            background: 'white',
+            border: '1px solid #e5e7eb',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '1rem'
+          }}>
+            <label style={{ fontSize: '0.9rem', fontWeight: '500', color: '#2d3748' }}>
+              Language:
+            </label>
+            <select
+              value={selectedLanguage}
+              onChange={(e) => setSelectedLanguage(e.target.value)}
+              disabled={isLoading || isPlaying}
               style={{
-                width: '100%',
-                padding: '15px',
-                borderRadius: '10px',
-                border: 'none',
-                fontWeight: 'bold',
-                cursor: (isLoading || isPlaying) ? 'not-allowed' : 'pointer',
-                // Change color based on state
-                backgroundColor: isRecording ? '#ef4444' : (isPlaying ? '#9ca3af' : '#4b5563'), 
-                color: 'white',
-                transition: 'all 0.2s ease',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: '8px'
+                padding: '0.5rem 1rem',
+                borderRadius: '8px',
+                border: '1px solid #e5e7eb',
+                background: 'white',
+                color: '#2d3748',
+                fontSize: '0.9rem',
+                cursor: 'pointer',
+                outline: 'none'
               }}
             >
-              {/* === DYNAMIC TEXT === */}
-              {isRecording ? 'Listening... Release to Send' : 
-               isPlaying ? '🔊 Audio Playing...' : 
-               '🎙️ Hold to Speak'}
-            </button>
-
-            <form onSubmit={handleSend} className="chat-input-container" style={{ width: '100%' }}>
-              <input
-                type="text"
-                value={inputValue}
-                onChange={(e) => setInputValue(e.target.value)}
-                placeholder="Or type your message..."
-                className="chat-input-field"
-                disabled={isLoading || isPlaying}
-              />
-              <button type="submit" className="send-button" disabled={isLoading || !inputValue.trim() || isPlaying}>
-                {isLoading && !isRecording ? <span className="spinner"></span> : <span>➤</span>}
-              </button>
-            </form>
+              {languages.map(lang => (
+                <option key={lang.code} value={lang.code}>{lang.name}</option>
+              ))}
+            </select>
           </div>
-        </div>
-      </div>
-      
-      <style jsx>{`
-        .chat-input-wrapper {
-          background: white;
-          padding: 15px;
-          border-top: 1px solid #e5e7eb;
-        }
-      `}</style>
+        )}
+
+        {/* Messages (Minimal, only show recent) */}
+        {messages.length > 1 && (
+          <div style={{
+            width: '100%',
+            maxWidth: '600px',
+            marginTop: '2rem',
+            maxHeight: '300px',
+            overflowY: 'auto',
+            padding: '1rem',
+            background: 'white',
+            borderRadius: '12px',
+            boxShadow: '0 2px 8px rgba(0,0,0,0.05)'
+          }}>
+            {messages.slice(-3).map((message) => (
+              <div key={message.id} style={{
+                marginBottom: '1rem',
+                padding: '0.75rem',
+                background: message.type === 'user' ? '#f3f4f6' : '#f9fafb',
+                borderRadius: '8px',
+                fontSize: '0.9rem',
+                color: '#2d3748'
+              }}>
+                {message.text}
+              </div>
+            ))}
+          </div>
+        )}
+      </main>
     </div>
   )
 }

@@ -16,9 +16,7 @@ const languages = [
 ]
 
 export default function Chat() {
-  const [messages, setMessages] = useState([
-    { id: 1, text: 'Hello! I\'m here to help you with questions about your rights as a migrant worker in Singapore, employment contracts, and finding support resources. How can I assist you today?', type: 'bot' }
-  ])
+  const [messages, setMessages] = useState([])
   const [inputValue, setInputValue] = useState('')
   const [isLoading, setIsLoading] = useState(false)
   const [useStreaming, setUseStreaming] = useState(true) // Streaming on by default
@@ -171,61 +169,87 @@ export default function Chat() {
   }
 
   return (
-    <div>
-      <nav className="nav">
-        <div className="nav-content">
-          <h2>Build For Impact</h2>
-          <ul className="nav-links">
-            <li><Link href="/">Home</Link></li>
-            <li><Link href="/chat">Chat</Link></li>
-            <li><Link href="/document-chat">Document Chat</Link></li>
-            <li><Link href="/voice-chat">Voice Chat</Link></li>
-            <li><Link href="/video-chat">Video Chat</Link></li>
-            <li><Link href="/faq">FAQ</Link></li>
-            <li><Link href="/company-review">Company Review</Link></li>
-            <li><Link href="/reviews">View Reviews</Link></li>
-          </ul>
-        </div>
-      </nav>
-
-      <div className="chat-page-container">
-        <div className="chat-wrapper">
-          <div className="chat-header">
-            <div className="chat-header-top">
-              <div>
-                <h1>Chat Assistant</h1>
-                <p>Ask questions about your rights, contracts, and support resources</p>
-              </div>
-              <div className="language-selector">
-                <label htmlFor="language-select" className="language-label">
-                  Language:
-                </label>
-                <select
-                  id="language-select"
-                  value={selectedLanguage}
-                  onChange={(e) => setSelectedLanguage(e.target.value)}
-                  className="language-dropdown"
-                  disabled={isLoading}
-                >
-                  {languages.map(lang => (
-                    <option key={lang.code} value={lang.code}>
-                      {lang.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
+    <div className="modern-chat-page">
+      {/* Header */}
+      <header className="modern-chat-header">
+        <div className="header-left">
+          <Link href="/" className="logo-link">
+            <div className="logo-icon">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <circle cx="12" cy="12" r="10" fill="#FFA500"/>
+                <path d="M8 10h8M8 14h6" stroke="white" strokeWidth="2" strokeLinecap="round"/>
+              </svg>
             </div>
-          </div>
+            <h2 className="header-title">Assistant Hub</h2>
+          </Link>
+          <nav className="header-nav">
+            <Link href="/" className="nav-link">Home</Link>
+            <Link href="/chat" className="nav-link">Chat</Link>
+            <Link href="/document-chat" className="nav-link">Document Chat</Link>
+            <Link href="/voice-chat" className="nav-link">Voice Chat</Link>
+            <Link href="/video-chat" className="nav-link">Video Chat</Link>
+            <Link href="/faq" className="nav-link">FAQ</Link>
+            <Link href="/company-review" className="nav-link">Company Review</Link>
+            <Link href="/reviews" className="nav-link">Reviews</Link>
+          </nav>
+        </div>
+      </header>
 
-          <div className="chat-messages-container">
-            <div className="chat-messages">
+      {/* Main Content */}
+      <div className="modern-chat-container">
+        {messages.length === 0 ? (
+          <div className="modern-chat-welcome">
+            <h1 className="welcome-heading">How can I help you today?</h1>
+            
+            <form onSubmit={handleSend} className="modern-chat-form">
+              <input
+                type="text"
+                value={inputValue}
+                onChange={(e) => setInputValue(e.target.value)}
+                placeholder="Type your message here..."
+                className="modern-input-field"
+                disabled={isLoading}
+              />
+              
+              <div className="send-button-container">
+                <div className="language-selector-inline">
+                  <select
+                    id="language-select-inline"
+                    value={selectedLanguage}
+                    onChange={(e) => setSelectedLanguage(e.target.value)}
+                    className="language-dropdown-inline"
+                    disabled={isLoading}
+                  >
+                    {languages.map(lang => (
+                      <option key={lang.code} value={lang.code}>
+                        {lang.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <button 
+                  type="submit" 
+                  className="modern-send-button" 
+                  disabled={isLoading || !inputValue.trim()}
+                >
+                  <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M2 10l16-8-8 16-2-6-6-2z" fill="white"/>
+                  </svg>
+                  <span>Send Message</span>
+                </button>
+              </div>
+            </form>
+          </div>
+        ) : (
+          <div className="modern-chat-wrapper">
+            <div className="modern-chat-messages">
               {messages.map((message) => (
-                <div key={message.id} className={`message-bubble ${message.type}`}>
-                  <div className="message-content">
+                <div key={message.id} className={`modern-message ${message.type}`}>
+                  <div className="modern-message-content">
                     {message.text}
                   </div>
                   <button
-                    className="copy-button"
+                    className="modern-copy-button"
                     onClick={() => copyToClipboard(message.text)}
                     title="Copy message"
                   >
@@ -234,8 +258,8 @@ export default function Chat() {
                 </div>
               ))}
               {isLoading && (
-                <div className="message-bubble bot">
-                  <div className="message-content">
+                <div className="modern-message bot">
+                  <div className="modern-message-content">
                     <span className="typing-indicator">
                       <span></span>
                       <span></span>
@@ -245,28 +269,49 @@ export default function Chat() {
                 </div>
               )}
             </div>
-          </div>
 
-          <form onSubmit={handleSend} className="chat-input-wrapper">
-            <div className="chat-input-container">
-              <input
-                type="text"
-                value={inputValue}
-                onChange={(e) => setInputValue(e.target.value)}
-                placeholder="Type your message..."
-                className="chat-input-field"
-                disabled={isLoading}
-              />
-              <button type="submit" className="send-button" disabled={isLoading || !inputValue.trim()}>
-                {isLoading ? (
-                  <span className="spinner"></span>
-                ) : (
-                  <span>➤</span>
-                )}
-              </button>
-            </div>
-          </form>
-        </div>
+            <form onSubmit={handleSend} className="modern-chat-input-wrapper">
+              <div className="modern-input-container">
+                <input
+                  type="text"
+                  value={inputValue}
+                  onChange={(e) => setInputValue(e.target.value)}
+                  placeholder="Type your message here..."
+                  className="modern-input-field"
+                  disabled={isLoading}
+                />
+                <div className="language-selector-inline">
+                  <select
+                    id="language-select-inline-chat"
+                    value={selectedLanguage}
+                    onChange={(e) => setSelectedLanguage(e.target.value)}
+                    className="language-dropdown-inline"
+                    disabled={isLoading}
+                  >
+                    {languages.map(lang => (
+                      <option key={lang.code} value={lang.code}>
+                        {lang.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <button 
+                  type="submit" 
+                  className="modern-send-button-inline" 
+                  disabled={isLoading || !inputValue.trim()}
+                >
+                  {isLoading ? (
+                    <span className="spinner"></span>
+                  ) : (
+                    <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <path d="M2 10l16-8-8 16-2-6-6-2z" fill="white"/>
+                    </svg>
+                  )}
+                </button>
+              </div>
+            </form>
+          </div>
+        )}
       </div>
     </div>
   )
