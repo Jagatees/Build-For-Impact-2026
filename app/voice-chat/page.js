@@ -11,7 +11,8 @@ const languages = [
   { code: 'hi', name: 'Hindi' },
   { code: 'bn', name: 'Bengali' },
   { code: 'th', name: 'Thai' },
-  { code: 'id', name: 'Indonesian' }
+  { code: 'id', name: 'Indonesian' },
+  { code: 'tl', name: 'Tagalog' }
 ]
 
 export default function VoiceChat() {
