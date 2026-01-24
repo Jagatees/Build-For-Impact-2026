@@ -1,235 +1,205 @@
-'use client'
+"use client";
 
-import { useState } from 'react'
-import Link from 'next/link'
+import { useState, useCallback } from "react";
+import { FileText, Plus, Mic, Lock } from "lucide-react";
 
-const languages = [
-  { code: 'en', name: 'English' },
-  { code: 'ta', name: 'Tamil' },
-  { code: 'ms', name: 'Malay' },
-  { code: 'zh', name: 'Mandarin' },
-  { code: 'hi', name: 'Hindi' },
-  { code: 'bn', name: 'Bengali' },
-  { code: 'th', name: 'Thai' },
-  { code: 'id', name: 'Indonesian' }
-]
+const seaLionLanguages = [
+  { code: "en", label: "English" },
+  { code: "ta", label: "Tamil" },
+  { code: "ms", label: "Malay" },
+  { code: "zh", label: "Mandarin (Chinese)" },
+  { code: "hi", label: "Hindi" },
+  { code: "bn", label: "Bengali" },
+  { code: "th", label: "Thai" },
+  { code: "id", label: "Indonesian" },
+  { code: "vi", label: "Vietnamese" },
+];
 
-export default function DocumentChat() {
-  const [messages, setMessages] = useState([
-    { id: 1, text: 'Hello! I\'m here to help you with questions about your rights as a migrant worker in Singapore, employment contracts, and finding support resources. How can I assist you today?', type: 'bot' }
-  ])
-  const [inputValue, setInputValue] = useState('')
-  const [isLoading, setIsLoading] = useState(false)
-  const [useStreaming, setUseStreaming] = useState(true) // Streaming on by default
-  const [selectedLanguage, setSelectedLanguage] = useState('en') // Default: English
+export default function Page() {
+  const [file, setFile] = useState(null);
+  const [isUploading, setIsUploading] = useState(false);
+  const [error, setError] = useState("");
+  const [isDragging, setIsDragging] = useState(false);
+  const [selectedLanguage, setSelectedLanguage] = useState("en");
+  const [originalText, setOriginalText] = useState("");
+  const [translatedText, setTranslatedText] = useState("");
+  const [hasTranslated, setHasTranslated] = useState(false);
 
-  const copyToClipboard = (text) => {
-    navigator.clipboard.writeText(text).then(() => {
-      // You could add a toast notification here
-      console.log('Copied to clipboard')
-    }).catch(err => {
-      console.error('Failed to copy:', err)
-    })
-  }
+  const handleTranslate = async () => {
+    if (!file || isUploading) return;
 
-  const handleSend = async (e) => {
-    e.preventDefault()
-    if (!inputValue.trim() || isLoading) return
-
-    const userMessageText = inputValue.trim()
-    setInputValue('')
-    setIsLoading(true)
-
-    // Add user message
-    const userMessage = {
-      id: Date.now(),
-      text: userMessageText,
-      type: 'user'
-    }
-    setMessages(prev => [...prev, userMessage])
+    setIsUploading(true);
+    setError("");
+    setTranslatedText("");
+    setHasTranslated(true);
 
     try {
-      // Get selected language name
-      const languageName = languages.find(lang => lang.code === selectedLanguage)?.name || 'English'
-      
-      // Add language instruction to the message
-      const messageWithLanguage = `${userMessageText}\n\nPlease reply in ${languageName}.`
+      const formData = new FormData();
+      formData.append("file", file);
+      formData.append("language", selectedLanguage);
 
-      // Build conversation history (last 10 messages for context)
-      const conversationHistory = messages
-        .filter(msg => msg.type === 'user' || msg.type === 'bot')
-        .slice(-10) // Last 10 messages
-        .map(msg => ({
-          role: msg.type === 'user' ? 'user' : 'assistant',
-          content: msg.text
-        }))
+      const response = await fetch("/api/document-chat", {
+        method: "POST",
+        body: formData,
+      });
 
-      // Always use streaming
-      if (true) {
-        const response = await fetch('/api/chat/stream', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ 
-            message: messageWithLanguage,
-            conversationHistory: conversationHistory
-          })
-        })
-
-        if (!response.ok) {
-          let errorData
-          try {
-            errorData = await response.json()
-          } catch (parseError) {
-            const errorText = await response.text()
-            throw new Error(`Server error (${response.status}): ${errorText.substring(0, 200)}`)
-          }
-          const errorMsg = errorData.error || errorData.details || 'Failed to get response'
-          throw new Error(errorMsg)
-        }
-
-        // Create a placeholder bot message that we'll update as chunks arrive
-        const botMessageId = Date.now() + 1
-        const botMessage = {
-          id: botMessageId,
-          text: '',
-          type: 'bot'
-        }
-        setMessages(prev => [...prev, botMessage])
-
-        // Read the stream
-        const reader = response.body.getReader()
-        const decoder = new TextDecoder()
-        let fullText = ''
-
-        while (true) {
-          const { done, value } = await reader.read()
-          if (done) break
-          
-          const chunk = decoder.decode(value, { stream: true })
-          fullText += chunk
-          
-          // Update the message with accumulated text in real-time
-          setMessages(prev => prev.map(msg => 
-            msg.id === botMessageId 
-              ? { ...msg, text: fullText }
-              : msg
-          ))
-        }
+      if (!response.ok) {
+        throw new Error("Translation failed");
       }
-    } catch (error) {
-      console.error('Error:', error)
-      // Add error message
-      const errorMessage = {
-        id: Date.now(),
-        text: error.message || 'Sorry, I encountered an error. Please try again or check your API configuration.',
-        type: 'bot'
+
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+      let fullText = "";
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        const chunk = decoder.decode(value, { stream: true });
+        fullText += chunk;
+
+        setTranslatedText(fullText);
       }
-      setMessages(prev => [...prev, errorMessage])
+    } catch (err) {
+      console.error(err);
+      setError("Failed to translate document.");
     } finally {
-      setIsLoading(false)
+      setIsUploading(false);
     }
-  }
+  };
+
+  const handleFileChange = (e) => {
+    if (e.target.files && e.target.files[0]) {
+      setFile(e.target.files[0]);
+      setError("");
+    }
+  };
+
+  const handleDrop = useCallback((e) => {
+    e.preventDefault();
+    setIsDragging(false);
+
+    const droppedFile = e.dataTransfer.files[0];
+    if (droppedFile) {
+      setFile(droppedFile);
+      setError("");
+    }
+  }, []);
+
+  const handleDragOver = useCallback((e) => {
+    e.preventDefault();
+    setIsDragging(true);
+  }, []);
+
+  const handleDragLeave = useCallback((e) => {
+    e.preventDefault();
+    setIsDragging(false);
+  }, []);
 
   return (
-    <div>
-      <nav className="nav">
-        <div className="nav-content">
-          <h2>Build For Impact</h2>
-          <ul className="nav-links">
-            <li><Link href="/">Home</Link></li>
-            <li><Link href="/chat">Chat</Link></li>
-            <li><Link href="/document-chat">Document Chat</Link></li>
-            <li><Link href="/voice-chat">Voice Chat</Link></li>
-            <li><Link href="/video-chat">Video Chat</Link></li>
-            <li><Link href="/faq">FAQ</Link></li>
-            <li><Link href="/company-review">Company Review</Link></li>
-            <li><Link href="/reviews">View Reviews</Link></li>
-          </ul>
+    <div className="min-h-screen bg-gray-100 flex flex-col items-center justify-center px-4 py-12">
+      <div className="w-full max-w-xl bg-white rounded-2xl shadow-lg p-8 text-center">
+        <h1 className="text-3xl font-bold text-gray-900 mb-3">
+          Upload Your Documents
+        </h1>
+
+        <p className="text-gray-600 mb-8">
+          Put your papers here so I can help you read them.
+        </p>
+
+        {/* DROP ZONE */}
+        <div
+          className={`relative rounded-xl border-2 border-dashed p-8 transition-all
+            ${isDragging ? "border-teal-500 bg-teal-50" : "border-teal-400"}
+          `}
+          onDrop={handleDrop}
+          onDragOver={handleDragOver}
+          onDragLeave={handleDragLeave}
+        >
+          <div className="flex justify-center mb-6">
+            <div className="relative">
+              <div className="w-16 h-20 bg-teal-100 rounded-lg flex items-center justify-center">
+                <FileText className="w-10 h-10 text-teal-600" />
+              </div>
+              <div className="absolute -top-1 -right-1 w-6 h-6 bg-orange-500 rounded-full flex items-center justify-center">
+                <Plus className="w-4 h-4 text-white" />
+              </div>
+            </div>
+          </div>
+
+          <p className="text-xl font-semibold text-gray-900 mb-1">
+            Drag and Drop
+          </p>
+          <p className="text-gray-600 mb-6">Move your files into this box</p>
+
+          <div className="flex items-center gap-4 mb-6">
+            <div className="flex-1 h-px bg-gray-300" />
+            <span className="text-sm text-gray-500 uppercase">or</span>
+            <div className="flex-1 h-px bg-gray-300" />
+          </div>
+
+          <label className="inline-flex items-center gap-2 bg-orange-500 hover:bg-orange-600 text-white font-medium px-6 py-3 rounded-full cursor-pointer">
+            <FileText className="w-5 h-5" />
+            Pick a File from My Computer
+            <input
+              type="file"
+              accept=".pdf,.doc,.docx"
+              hidden
+              onChange={handleFileChange}
+            />
+          </label>
+
+          {file && (
+            <div className="mt-6 inline-flex items-center gap-2 bg-teal-100 text-teal-700 px-4 py-2 rounded-lg">
+              <FileText className="w-4 h-4" />
+              <span className="font-medium">{file.name}</span>
+            </div>
+          )}
         </div>
-      </nav>
 
-      <div className="chat-page-container">
-        <div className="chat-wrapper">
-          <div className="chat-header">
-            <div className="chat-header-top">
-              <div>
-                <h1>Document Chat</h1>
-                <p>Ask questions about your rights, contracts, and support resources</p>
-              </div>
-              <div className="language-selector">
-                <label htmlFor="language-select" className="language-label">
-                  Language:
-                </label>
-                <select
-                  id="language-select"
-                  value={selectedLanguage}
-                  onChange={(e) => setSelectedLanguage(e.target.value)}
-                  className="language-dropdown"
-                  disabled={isLoading}
-                >
-                  {languages.map(lang => (
-                    <option key={lang.code} value={lang.code}>
-                      {lang.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            </div>
-          </div>
+        {error && <p className="mt-4 text-red-600 font-medium">{error}</p>}
 
-          <div className="chat-messages-container">
-            <div className="chat-messages">
-              {messages.map((message) => (
-                <div key={message.id} className={`message-bubble ${message.type}`}>
-                  <div className="message-content">
-                    {message.text}
-                  </div>
-                  <button
-                    className="copy-button"
-                    onClick={() => copyToClipboard(message.text)}
-                    title="Copy message"
-                  >
-                    📋
-                  </button>
-                </div>
+        {/* LANGUAGE + TRANSLATE */}
+        <div className="mt-6 bg-gray-50 rounded-xl p-6 flex flex-col md:flex-row gap-4 items-center justify-between">
+          {/* Language Dropdown */}
+          <div className="w-full md:w-auto flex flex-col text-left">
+            <label className="text-sm font-medium text-gray-700 mb-1">
+              Translate document to:
+            </label>
+            <select
+              value={selectedLanguage}
+              onChange={(e) => setSelectedLanguage(e.target.value)}
+              className="border border-gray-300 rounded-lg px-3 py-2 text-gray-900 focus:outline-none focus:ring-2 focus:ring-orange-500"
+            >
+              {seaLionLanguages.map((lang) => (
+                <option key={lang.code} value={lang.code}>
+                  {lang.label}
+                </option>
               ))}
-              {isLoading && (
-                <div className="message-bubble bot">
-                  <div className="message-content">
-                    <span className="typing-indicator">
-                      <span></span>
-                      <span></span>
-                      <span></span>
-                    </span>
-                  </div>
-                </div>
-              )}
-            </div>
+            </select>
           </div>
 
-          <form onSubmit={handleSend} className="chat-input-wrapper">
-            <div className="chat-input-container">
-              <input
-                type="text"
-                value={inputValue}
-                onChange={(e) => setInputValue(e.target.value)}
-                placeholder="Type your message..."
-                className="chat-input-field"
-                disabled={isLoading}
-              />
-              <button type="submit" className="send-button" disabled={isLoading || !inputValue.trim()}>
-                {isLoading ? (
-                  <span className="spinner"></span>
-                ) : (
-                  <span>➤</span>
-                )}
-              </button>
-            </div>
-          </form>
+          {/* Translate Button */}
+          <button
+            className={`px-6 py-3 rounded-full font-medium text-white transition
+    ${
+      file
+        ? "bg-orange-500 hover:bg-orange-600"
+        : "bg-gray-400 cursor-not-allowed"
+    }
+  `}
+            disabled={!file || isUploading}
+            onClick={handleTranslate}
+          >
+            {isUploading ? "Translating..." : "Translate"}
+          </button>
+        </div>
+
+        <div className="mt-6 flex items-center justify-center gap-2 text-gray-500">
+          <Lock className="w-4 h-4" />
+          <span className="text-sm">Your documents are safe and private.</span>
         </div>
       </div>
     </div>
-  )
+  );
 }
