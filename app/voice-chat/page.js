@@ -1,7 +1,8 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import Link from 'next/link'
+import { AudioRecorder } from '@/utils/audio-recorder' 
 
 const languages = [
   { code: 'en', name: 'English' },
@@ -17,89 +18,174 @@ const languages = [
 
 export default function VoiceChat() {
   const [messages, setMessages] = useState([
-    { id: 1, text: 'Hello! I\'m here to help you with questions about your rights as a migrant worker in Singapore, employment contracts, and finding support resources. How can I assist you today?', type: 'bot' }
+    { id: 1, text: 'Hello! Select your language above, then speak or type.', type: 'bot' }
   ])
   const [inputValue, setInputValue] = useState('')
   const [isLoading, setIsLoading] = useState(false)
-  const [useStreaming, setUseStreaming] = useState(true) // Streaming on by default
-  const [selectedLanguage, setSelectedLanguage] = useState('en') // Default: English
+  const [isRecording, setIsRecording] = useState(false) 
+  const [useStreaming, setUseStreaming] = useState(true)
+  const [selectedLanguage, setSelectedLanguage] = useState('en')
+  
+  // === NEW STATE: TRACK AUDIO PLAYBACK ===
+  const [isPlaying, setIsPlaying] = useState(false)
+
+  const messagesEndRef = useRef(null)
+
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
+  }, [messages])
 
   const copyToClipboard = (text) => {
     navigator.clipboard.writeText(text).then(() => {
-      // You could add a toast notification here
       console.log('Copied to clipboard')
-    }).catch(err => {
-      console.error('Failed to copy:', err)
-    })
+    }).catch(err => console.error('Failed to copy:', err))
   }
 
+  // === NEW HELPER: PLAY AUDIO & TRACK STATE ===
+  const playAudio = (url) => {
+    if (isPlaying) return; // Prevent overlapping audio
+    
+    setIsPlaying(true);
+    const audio = new Audio(url);
+    
+    // When audio finishes, re-enable buttons
+    audio.onended = () => {
+        setIsPlaying(false);
+    };
+    
+    // Handle errors (e.g., if file is corrupt)
+    audio.onerror = () => {
+        setIsPlaying(false);
+        alert("Error playing audio");
+    };
+
+    audio.play();
+  };
+
+  // ==============================
+  // VOICE HANDLING
+  // ==============================
+  const startRecording = async () => {
+    if (isLoading || isPlaying) return; // Block if playing
+    try {
+      await AudioRecorder.start();
+      setIsRecording(true);
+    } catch (e) {
+      console.error(e);
+      alert("Microphone access denied. Please allow permission.");
+    }
+  };
+
+  const stopRecordingAndSend = async () => {
+    if (!isRecording) return;
+    setIsRecording(false);
+    setIsLoading(true);
+
+    try {
+      const audioBase64 = await AudioRecorder.stop();
+      if (!audioBase64) {
+        setIsLoading(false);
+        return;
+      }
+
+      const tempId = Date.now();
+      setMessages(prev => [...prev, { id: tempId, text: '🎤 Processing audio...', type: 'user' }]);
+
+      const base64Response = await fetch(audioBase64);
+      const blob = await base64Response.blob();
+      
+      const formData = new FormData();
+      formData.append('file', blob, 'recording.webm');
+      formData.append('language', selectedLanguage); 
+
+      const response = await fetch('/api/chat', {
+        method: 'POST',
+        body: formData,
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        setMessages(prev => prev.map(msg => 
+          msg.id === tempId ? { ...msg, text: data.userText } : msg
+        ));
+
+        let audioUrl = null;
+        if (data.audioBase64) {
+          const byteCharacters = atob(data.audioBase64);
+          const byteNumbers = new Array(byteCharacters.length);
+          for (let i = 0; i < byteCharacters.length; i++) {
+            byteNumbers[i] = byteCharacters.charCodeAt(i);
+          }
+          const audioBlob = new Blob([new Uint8Array(byteNumbers)], { type: 'audio/mp3' });
+          audioUrl = URL.createObjectURL(audioBlob);
+          
+          // === USE HELPER INSTEAD OF DIRECT PLAY ===
+          playAudio(audioUrl); 
+        }
+
+        setMessages(prev => [...prev, { 
+          id: Date.now() + 1, 
+          text: data.message, 
+          type: 'bot',
+          audioUrl: audioUrl 
+        }]);
+      } else {
+        setMessages(prev => prev.filter(msg => msg.id !== tempId));
+        alert(data.error || "Could not understand audio.");
+      }
+
+    } catch (error) {
+      console.error('Voice Error:', error);
+      alert("Error sending audio.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // ==============================
+  // TEXT HANDLING
+  // ==============================
   const handleSend = async (e) => {
     e.preventDefault()
-    if (!inputValue.trim() || isLoading) return
+    if (!inputValue.trim() || isLoading || isPlaying) return
 
     const userMessageText = inputValue.trim()
     setInputValue('')
     setIsLoading(true)
 
-    // Add user message
-    const userMessage = {
-      id: Date.now(),
-      text: userMessageText,
-      type: 'user'
-    }
+    const userMessage = { id: Date.now(), text: userMessageText, type: 'user' }
     setMessages(prev => [...prev, userMessage])
 
     try {
-      // Get selected language name
       const languageName = languages.find(lang => lang.code === selectedLanguage)?.name || 'English'
-      
-      // Add language instruction to the message
-      const messageWithLanguage = `${userMessageText}\n\nPlease reply in ${languageName}.`
+      const messageWithLanguage = userMessageText; 
 
-      // Build conversation history (last 10 messages for context)
       const conversationHistory = messages
         .filter(msg => msg.type === 'user' || msg.type === 'bot')
-        .slice(-10) // Last 10 messages
+        .slice(-10)
         .map(msg => ({
           role: msg.type === 'user' ? 'user' : 'assistant',
           content: msg.text
         }))
 
-      // Always use streaming
-      if (true) {
-        const response = await fetch('/api/chat/stream', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ 
-            message: messageWithLanguage,
-            conversationHistory: conversationHistory
-          })
+      const response = await fetch('/api/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          message: messageWithLanguage,
+          conversationHistory: conversationHistory,
+          useStreaming: useStreaming,
+          language: selectedLanguage 
         })
+      })
 
-        if (!response.ok) {
-          let errorData
-          try {
-            errorData = await response.json()
-          } catch (parseError) {
-            const errorText = await response.text()
-            throw new Error(`Server error (${response.status}): ${errorText.substring(0, 200)}`)
-          }
-          const errorMsg = errorData.error || errorData.details || 'Failed to get response'
-          throw new Error(errorMsg)
-        }
+      if (!response.ok) throw new Error(`Server error: ${response.status}`);
 
-        // Create a placeholder bot message that we'll update as chunks arrive
+      if (useStreaming && response.headers.get('content-type')?.includes('text/event-stream')) {
         const botMessageId = Date.now() + 1
-        const botMessage = {
-          id: botMessageId,
-          text: '',
-          type: 'bot'
-        }
-        setMessages(prev => [...prev, botMessage])
+        setMessages(prev => [...prev, { id: botMessageId, text: '', type: 'bot' }])
 
-        // Read the stream
         const reader = response.body.getReader()
         const decoder = new TextDecoder()
         let fullText = ''
@@ -107,32 +193,28 @@ export default function VoiceChat() {
         while (true) {
           const { done, value } = await reader.read()
           if (done) break
-          
           const chunk = decoder.decode(value, { stream: true })
           fullText += chunk
-          
-          // Update the message with accumulated text in real-time
           setMessages(prev => prev.map(msg => 
-            msg.id === botMessageId 
-              ? { ...msg, text: fullText }
-              : msg
+            msg.id === botMessageId ? { ...msg, text: fullText } : msg
           ))
         }
+      } else {
+        const data = await response.json()
+        setMessages(prev => [...prev, { id: Date.now() + 1, text: data.message, type: 'bot' }])
       }
+
     } catch (error) {
-      console.error('Error:', error)
-      // Add error message
-      const errorMessage = {
-        id: Date.now(),
-        text: error.message || 'Sorry, I encountered an error. Please try again or check your API configuration.',
-        type: 'bot'
-      }
-      setMessages(prev => [...prev, errorMessage])
+      console.error('Text Error:', error)
+      setMessages(prev => [...prev, { id: Date.now(), text: 'Error: ' + error.message, type: 'bot' }])
     } finally {
       setIsLoading(false)
     }
   }
 
+  // ==============================
+  // UI RENDER
+  // ==============================
   return (
     <div>
       <nav className="nav">
@@ -141,12 +223,7 @@ export default function VoiceChat() {
           <ul className="nav-links">
             <li><Link href="/">Home</Link></li>
             <li><Link href="/chat">Chat</Link></li>
-            <li><Link href="/document-chat">Document Chat</Link></li>
             <li><Link href="/voice-chat">Voice Chat</Link></li>
-            <li><Link href="/video-chat">Video Chat</Link></li>
-            <li><Link href="/faq">FAQ</Link></li>
-            <li><Link href="/company-review">Company Review</Link></li>
-            <li><Link href="/reviews">View Reviews</Link></li>
           </ul>
         </div>
       </nav>
@@ -156,24 +233,20 @@ export default function VoiceChat() {
           <div className="chat-header">
             <div className="chat-header-top">
               <div>
-                <h1>Voice Chat</h1>
-                <p>Ask questions about your rights, contracts, and support resources</p>
+                <h1>Voice & Text Chat</h1>
+                <p>Speak or type to ask about your rights and contracts</p>
               </div>
               <div className="language-selector">
-                <label htmlFor="language-select" className="language-label">
-                  Language:
-                </label>
+                <label htmlFor="language-select" className="language-label">Output Language:</label>
                 <select
                   id="language-select"
                   value={selectedLanguage}
                   onChange={(e) => setSelectedLanguage(e.target.value)}
                   className="language-dropdown"
-                  disabled={isLoading}
+                  disabled={isLoading || isPlaying} // Disable dropdown while playing
                 >
                   {languages.map(lang => (
-                    <option key={lang.code} value={lang.code}>
-                      {lang.name}
-                    </option>
+                    <option key={lang.code} value={lang.code}>{lang.name}</option>
                   ))}
                 </select>
               </div>
@@ -184,9 +257,24 @@ export default function VoiceChat() {
             <div className="chat-messages">
               {messages.map((message) => (
                 <div key={message.id} className={`message-bubble ${message.type}`}>
-                  <div className="message-content">
-                    {message.text}
-                  </div>
+                  <div className="message-content">{message.text}</div>
+                  {message.audioUrl && (
+                    <button
+                      className="mt-2 text-xs flex items-center gap-1 font-bold text-blue-600 hover:text-blue-800"
+                      // === DISABLE REPLAY IF PLAYING ===
+                      onClick={() => playAudio(message.audioUrl)}
+                      disabled={isPlaying} 
+                      style={{ 
+                          marginTop: '8px', 
+                          background: 'none', 
+                          border: 'none', 
+                          cursor: isPlaying ? 'not-allowed' : 'pointer',
+                          opacity: isPlaying ? 0.5 : 1
+                      }}
+                    >
+                      {isPlaying ? '🔊 Playing...' : '🔊 Replay Audio'}
+                    </button>
+                  )}
                   <button
                     className="copy-button"
                     onClick={() => copyToClipboard(message.text)}
@@ -196,41 +284,73 @@ export default function VoiceChat() {
                   </button>
                 </div>
               ))}
-              {isLoading && (
+              {isLoading && !isRecording && (
                 <div className="message-bubble bot">
                   <div className="message-content">
-                    <span className="typing-indicator">
-                      <span></span>
-                      <span></span>
-                      <span></span>
-                    </span>
+                    <span className="typing-indicator"><span></span><span></span><span></span></span>
                   </div>
                 </div>
               )}
             </div>
           </div>
 
-          <form onSubmit={handleSend} className="chat-input-wrapper">
-            <div className="chat-input-container">
+          <div className="chat-input-wrapper" style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+            
+            {/* === MAIN BUTTON === */}
+            <button
+              onMouseDown={startRecording}
+              onMouseUp={stopRecordingAndSend}
+              onTouchStart={startRecording}
+              onTouchEnd={stopRecordingAndSend}
+              // === DISABLE WHILE PLAYING ===
+              disabled={isLoading || isPlaying} 
+              style={{
+                width: '100%',
+                padding: '15px',
+                borderRadius: '10px',
+                border: 'none',
+                fontWeight: 'bold',
+                cursor: (isLoading || isPlaying) ? 'not-allowed' : 'pointer',
+                // Change color based on state
+                backgroundColor: isRecording ? '#ef4444' : (isPlaying ? '#9ca3af' : '#4b5563'), 
+                color: 'white',
+                transition: 'all 0.2s ease',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '8px'
+              }}
+            >
+              {/* === DYNAMIC TEXT === */}
+              {isRecording ? 'Listening... Release to Send' : 
+               isPlaying ? '🔊 Audio Playing...' : 
+               '🎙️ Hold to Speak'}
+            </button>
+
+            <form onSubmit={handleSend} className="chat-input-container" style={{ width: '100%' }}>
               <input
                 type="text"
                 value={inputValue}
                 onChange={(e) => setInputValue(e.target.value)}
-                placeholder="Type your message..."
+                placeholder="Or type your message..."
                 className="chat-input-field"
-                disabled={isLoading}
+                disabled={isLoading || isPlaying}
               />
-              <button type="submit" className="send-button" disabled={isLoading || !inputValue.trim()}>
-                {isLoading ? (
-                  <span className="spinner"></span>
-                ) : (
-                  <span>➤</span>
-                )}
+              <button type="submit" className="send-button" disabled={isLoading || !inputValue.trim() || isPlaying}>
+                {isLoading && !isRecording ? <span className="spinner"></span> : <span>➤</span>}
               </button>
-            </div>
-          </form>
+            </form>
+          </div>
         </div>
       </div>
+      
+      <style jsx>{`
+        .chat-input-wrapper {
+          background: white;
+          padding: 15px;
+          border-top: 1px solid #e5e7eb;
+        }
+      `}</style>
     </div>
   )
 }
