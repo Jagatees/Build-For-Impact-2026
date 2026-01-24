@@ -16,12 +16,15 @@ const languages = [
 
 export default function DocumentChat() {
   const [messages, setMessages] = useState([
-    { id: 1, text: 'Hello! I\'m here to help you with questions about your rights as a migrant worker in Singapore, employment contracts, and finding support resources. How can I assist you today?', type: 'bot' }
+    { id: 1, text: 'Hello! Upload a PDF document and I can help you understand it. Ask me questions about the document content, and I\'ll analyze it for you.', type: 'bot' }
   ])
   const [inputValue, setInputValue] = useState('')
   const [isLoading, setIsLoading] = useState(false)
   const [useStreaming, setUseStreaming] = useState(true) // Streaming on by default
   const [selectedLanguage, setSelectedLanguage] = useState('en') // Default: English
+  const [pdfText, setPdfText] = useState(null) // Store extracted PDF text
+  const [pdfInfo, setPdfInfo] = useState(null) // Store PDF metadata
+  const [isUploading, setIsUploading] = useState(false) // Track PDF upload status
 
   const copyToClipboard = (text) => {
     navigator.clipboard.writeText(text).then(() => {
@@ -30,6 +33,62 @@ export default function DocumentChat() {
     }).catch(err => {
       console.error('Failed to copy:', err)
     })
+  }
+
+  const handlePdfUpload = async (e) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    if (file.type !== 'application/pdf' && !file.name.endsWith('.pdf')) {
+      alert('Please upload a PDF file')
+      return
+    }
+
+    setIsUploading(true)
+    const formData = new FormData()
+    formData.append('pdf', file)
+
+    try {
+      const response = await fetch('/api/pdf-extract', {
+        method: 'POST',
+        body: formData
+      })
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to extract text from PDF')
+      }
+
+      setPdfText(data.text)
+      setPdfInfo(data.info)
+      
+      // Add a message indicating PDF was uploaded
+      const uploadMessage = {
+        id: Date.now(),
+        text: `📄 PDF uploaded: ${data.info.title || file.name} (${data.pages} pages)\n\nI've analyzed your document. You can now ask me questions about it!`,
+        type: 'bot'
+      }
+      setMessages(prev => [...prev, uploadMessage])
+    } catch (error) {
+      console.error('Error uploading PDF:', error)
+      alert(error.message || 'Failed to process PDF. Please try again.')
+    } finally {
+      setIsUploading(false)
+      // Reset file input
+      e.target.value = ''
+    }
+  }
+
+  const clearPdf = () => {
+    setPdfText(null)
+    setPdfInfo(null)
+    const clearMessage = {
+      id: Date.now(),
+      text: 'PDF document cleared. You can upload a new document.',
+      type: 'bot'
+    }
+    setMessages(prev => [...prev, clearMessage])
   }
 
   const handleSend = async (e) => {
@@ -52,8 +111,17 @@ export default function DocumentChat() {
       // Get selected language name
       const languageName = languages.find(lang => lang.code === selectedLanguage)?.name || 'English'
       
+      // Build the message with PDF context if available
+      let messageWithContext = userMessageText
+      
+      if (pdfText) {
+        // Include PDF text in the context
+        const pdfContext = `\n\n--- Document Content ---\n${pdfText.substring(0, 8000)}\n--- End Document ---\n\n`
+        messageWithContext = `Document context:${pdfContext}User question: ${userMessageText}\n\nPlease answer based on the document content above. If the document doesn't contain relevant information, say so.`
+      }
+      
       // Add language instruction to the message
-      const messageWithLanguage = `${userMessageText}\n\nPlease reply in ${languageName}.`
+      const messageWithLanguage = `${messageWithContext}\n\nPlease reply in ${languageName}.`
 
       // Build conversation history (last 10 messages for context)
       const conversationHistory = messages
@@ -156,7 +224,7 @@ export default function DocumentChat() {
             <div className="chat-header-top">
               <div>
                 <h1>Document Chat</h1>
-                <p>Ask questions about your rights, contracts, and support resources</p>
+                <p>Upload a PDF and ask questions about it</p>
               </div>
               <div className="language-selector">
                 <label htmlFor="language-select" className="language-label">
@@ -175,6 +243,40 @@ export default function DocumentChat() {
                     </option>
                   ))}
                 </select>
+              </div>
+            </div>
+            
+            {/* PDF Upload Section */}
+            <div className="pdf-upload-section">
+              <div className="pdf-upload-container">
+                <label htmlFor="pdf-upload" className="pdf-upload-label">
+                  {isUploading ? (
+                    <span>📄 Processing PDF...</span>
+                  ) : (
+                    <span>📄 {pdfText ? 'Replace PDF' : 'Upload PDF Document'}</span>
+                  )}
+                </label>
+                <input
+                  id="pdf-upload"
+                  type="file"
+                  accept=".pdf,application/pdf"
+                  onChange={handlePdfUpload}
+                  disabled={isUploading || isLoading}
+                  className="pdf-upload-input"
+                />
+                {pdfText && (
+                  <div className="pdf-info">
+                    <span className="pdf-name">📄 {pdfInfo?.title || 'Document loaded'}</span>
+                    <button 
+                      onClick={clearPdf} 
+                      className="clear-pdf-button"
+                      disabled={isLoading}
+                      title="Clear document"
+                    >
+                      ✕
+                    </button>
+                  </div>
+                )}
               </div>
             </div>
           </div>

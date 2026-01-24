@@ -1,7 +1,6 @@
 'use client'
 
 import Link from 'next/link'
-import Image from 'next/image'
 
 export default function Home() {
   return (
@@ -11,15 +10,6 @@ export default function Home() {
       <header className="navbar">
         <div className="nav-container">
           <Link href="/" className="brand-logo">
-            <div className="logo-wrapper">
-              <Image 
-                src="/logo.png" 
-                alt="AbangSG Logo" 
-                width={40} 
-                height={40} 
-                className="logo-img"
-              />
-            </div>
             <span className="brand-name">AbangSG</span>
           </Link>
 
@@ -144,7 +134,15 @@ export default function Home() {
       <style jsx global>{`
         /* RESET & BASICS */
         * { box-sizing: border-box; margin: 0; padding: 0; }
-        body { font-family: 'Inter', -apple-system, sans-serif; background: #fff; color: #1a202c; }
+        body { 
+          font-family: 'Inter', -apple-system, sans-serif; 
+          background: #fff; 
+          color: #1a202c;
+          visibility: visible;
+          opacity: 1;
+          transition: opacity 0.2s ease-in;
+        }
+        html { visibility: visible; }
 
         /* VARIABLES */
         :root {
@@ -170,7 +168,6 @@ export default function Home() {
           display: flex; justify-content: space-between; align-items: center;
         }
         .brand-logo { display: flex; align-items: center; gap: 10px; text-decoration: none; }
-        .logo-wrapper { border-radius: 8px; overflow: hidden; display: flex; }
         .brand-name { font-weight: 800; font-size: 1.25rem; color: var(--text-main); letter-spacing: -0.5px; }
         
         .nav-links { display: flex; gap: 2rem; }
