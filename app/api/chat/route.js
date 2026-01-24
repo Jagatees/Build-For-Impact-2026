@@ -108,13 +108,6 @@ export async function POST(request) {
 
       if (!audioFile) return NextResponse.json({ error: 'No audio file' }, { status: 400 });
 
-      if (!process.env.OPENAI_API_KEY) {
-        return NextResponse.json({ 
-          success: false, 
-          error: 'OpenAI API key not configured. Please set OPENAI_API_KEY in your .env.local file.' 
-        }, { status: 500 });
-      }
-
       const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
       // 1. Whisper (Transcribe)
@@ -130,16 +123,6 @@ export async function POST(request) {
           temperature: 0.0, 
         });
         userText = transcription.text;
-      } catch (openaiError) {
-        try { fs.unlinkSync(tempFilePath); } catch (e) {}
-        console.error('OpenAI transcription error:', openaiError);
-        if (openaiError.status === 401) {
-          return NextResponse.json({ 
-            success: false, 
-            error: 'Invalid OpenAI API key. Please check your API key at https://platform.openai.com/account/api-keys' 
-          }, { status: 401 });
-        }
-        throw openaiError;
       } finally {
         try { fs.unlinkSync(tempFilePath); } catch (e) {} 
       }
@@ -150,32 +133,19 @@ export async function POST(request) {
       const aiText = await querySeaLion(userText, [], langCode);
 
       // 3. TTS (Speak)
-      let audioBase64 = null;
-      try {
-        const mp3Response = await openai.audio.speech.create({
-          model: 'tts-1-hd',
-          voice: 'alloy', 
-          input: aiText,
-        });
+      const mp3Response = await openai.audio.speech.create({
+        model: 'tts-1-hd',
+        voice: 'alloy', 
+        input: aiText,
+      });
 
-        const mp3Buffer = Buffer.from(await mp3Response.arrayBuffer());
-        audioBase64 = mp3Buffer.toString('base64');
-      } catch (ttsError) {
-        console.error('OpenAI TTS error:', ttsError);
-        // Continue without audio if TTS fails
-        if (ttsError.status === 401) {
-          return NextResponse.json({ 
-            success: false, 
-            error: 'Invalid OpenAI API key. Please check your API key at https://platform.openai.com/account/api-keys' 
-          }, { status: 401 });
-        }
-      }
+      const mp3Buffer = Buffer.from(await mp3Response.arrayBuffer());
       
       return NextResponse.json({
         success: true,
         userText,
         message: aiText,
-        audioBase64: audioBase64 // May be null if TTS failed
+        audioBase64: mp3Buffer.toString('base64')
       });
     } 
     
