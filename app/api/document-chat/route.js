@@ -14,8 +14,35 @@ const SEA_LION_API_URL =
   process.env.SEA_LION_API_URL ||
   "https://cf-sealion01.jagateesvaran.workers.dev";
 
+/* ---------- Language map (IMPORTANT) ---------- */
+const LANGUAGE_MAP = {
+  en: "English",
+  zh: "Chinese (Simplified)",
+  ms: "Malay",
+  ta: "Tamil",
+  hi: "Hindi",
+  bn: "Bengali",
+  th: "Thai",
+  id: "Indonesian",
+  vi: "Vietnamese",
+};
+
+/* ---------- Chunking helper ---------- */
+function chunkText(text, chunkSize = 2500) {
+  const chunks = [];
+  let start = 0;
+
+  while (start < text.length) {
+    chunks.push(text.slice(start, start + chunkSize));
+    start += chunkSize;
+  }
+
+  return chunks;
+}
+
 export async function POST(req) {
   let tempDir;
+
   try {
     const formData = await req.formData();
     const file = formData.get("file");
@@ -31,11 +58,11 @@ export async function POST(req) {
 
     await fs.writeFile(pdfPath, Buffer.from(await file.arrayBuffer()));
 
-    /* ---------- PDF → PNG (pdftoppm) ---------- */
+    /* ---------- PDF → PNG ---------- */
     const outputPrefix = path.join(tempDir, "page");
     await execAsync(`pdftoppm -png "${pdfPath}" "${outputPrefix}"`);
 
-    /* ---------- OCR each page ---------- */
+    /* ---------- OCR ---------- */
     const files = await fs.readdir(tempDir);
     const imageFiles = files
       .filter(f => f.startsWith("page-") && f.endsWith(".png"))
@@ -64,11 +91,14 @@ export async function POST(req) {
     if (!extractedText.trim()) {
       return NextResponse.json(
         { error: "No text detected in document" },
-        { status: 400 },
+        { status: 400 }
       );
     }
 
-    /* ---------- Sea-Lion ---------- */
+    /* ---------- Translation (CHUNKED) ---------- */
+    const languageName =
+      LANGUAGE_MAP[targetLanguage] || "English";
+
     const systemPrompt = `
 You are a document translation assistant.
 - Translate clearly and accurately
@@ -78,43 +108,48 @@ You are a document translation assistant.
 - Output only translated text
 `;
 
-    const prompt = `
-Translate the following document into ${targetLanguage}.
+    const chunks = chunkText(extractedText);
+    let finalTranslation = "";
+
+    for (const chunk of chunks) {
+      const prompt = `
+Translate the following document into ${languageName}.
 Preserve formatting and paragraph breaks.
+Do NOT summarize.
 
 DOCUMENT:
-${extractedText}
+${chunk}
 `;
 
-    const response = await fetch(`${SEA_LION_API_URL}/stream`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ prompt, system: systemPrompt }),
-    });
+      const response = await fetch(`${SEA_LION_API_URL}/stream`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          prompt,
+          system: systemPrompt,
+        }),
+      });
 
-    if (!response.ok) {
-      const errText = await response.text();
-      console.error("Sea-Lion error:", errText);
-      return NextResponse.json(
-        { error: "Sea-Lion translation failed" },
-        { status: response.status },
-      );
+      if (!response.ok) {
+        const errText = await response.text();
+        console.error("Sea-Lion error:", errText);
+        throw new Error("Sea-Lion translation failed on a chunk");
+      }
+
+      const translatedChunk = await response.text();
+      finalTranslation += translatedChunk + "\n\n";
     }
 
-    /* ---------- Stream back ---------- */
-    return new Response(response.body, {
-      headers: {
-        "Content-Type": "text/event-stream",
-        "Cache-Control": "no-cache",
-        Connection: "keep-alive",
-      },
+    /* ---------- Return JSON ---------- */
+    return NextResponse.json({
+      translatedText: finalTranslation,
     });
 
   } catch (err) {
     console.error("DOCUMENT OCR PIPELINE ERROR:", err);
     return NextResponse.json(
       { error: err.message || "Translation failed" },
-      { status: 500 },
+      { status: 500 }
     );
   } finally {
     /* ---------- Cleanup ---------- */

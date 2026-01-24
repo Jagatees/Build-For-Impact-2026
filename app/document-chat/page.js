@@ -2,6 +2,7 @@
 
 import { useState, useCallback } from "react";
 import { FileText, Plus, Mic, Lock } from "lucide-react";
+import { useRouter } from "next/navigation";
 
 const seaLionLanguages = [
   { code: "en", label: "English" },
@@ -21,17 +22,15 @@ export default function Page() {
   const [error, setError] = useState("");
   const [isDragging, setIsDragging] = useState(false);
   const [selectedLanguage, setSelectedLanguage] = useState("en");
-  const [originalText, setOriginalText] = useState("");
   const [translatedText, setTranslatedText] = useState("");
   const [hasTranslated, setHasTranslated] = useState(false);
+  const router = useRouter();
 
   const handleTranslate = async () => {
     if (!file || isUploading) return;
 
     setIsUploading(true);
     setError("");
-    setTranslatedText("");
-    setHasTranslated(true);
 
     try {
       const formData = new FormData();
@@ -47,19 +46,22 @@ export default function Page() {
         throw new Error("Translation failed");
       }
 
-      const reader = response.body.getReader();
-      const decoder = new TextDecoder();
-      let fullText = "";
+      // ✅ Backend now returns JSON
+      const data = await response.json();
 
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
+      // ✅ Store translation
+      sessionStorage.setItem("translatedText", data.translatedText);
 
-        const chunk = decoder.decode(value, { stream: true });
-        fullText += chunk;
+      // ✅ Store metadata
+      sessionStorage.setItem("language", selectedLanguage);
+      sessionStorage.setItem("filename", file.name);
 
-        setTranslatedText(fullText);
-      }
+      // ✅ Store PDF blob URL
+      const pdfUrl = URL.createObjectURL(file);
+      sessionStorage.setItem("pdfUrl", pdfUrl);
+
+      // ✅ Navigate AFTER everything is saved
+      router.push("/document-chat/viewer");
     } catch (err) {
       console.error(err);
       setError("Failed to translate document.");
@@ -97,7 +99,8 @@ export default function Page() {
   }, []);
 
   return (
-    <div className="min-h-screen bg-gray-100 flex flex-col items-center justify-center px-4 py-12">
+    <div className="min-h-screen bg-gray-100 flex flex-col items-center px-4 py-12 gap-8">
+      {/* UPLOAD CARD */}
       <div className="w-full max-w-xl bg-white rounded-2xl shadow-lg p-8 text-center">
         <h1 className="text-3xl font-bold text-gray-900 mb-3">
           Upload Your Documents
@@ -132,18 +135,12 @@ export default function Page() {
           </p>
           <p className="text-gray-600 mb-6">Move your files into this box</p>
 
-          <div className="flex items-center gap-4 mb-6">
-            <div className="flex-1 h-px bg-gray-300" />
-            <span className="text-sm text-gray-500 uppercase">or</span>
-            <div className="flex-1 h-px bg-gray-300" />
-          </div>
-
           <label className="inline-flex items-center gap-2 bg-orange-500 hover:bg-orange-600 text-white font-medium px-6 py-3 rounded-full cursor-pointer">
             <FileText className="w-5 h-5" />
-            Pick a File from My Computer
+            Pick a File
             <input
               type="file"
-              accept=".pdf,.doc,.docx"
+              accept=".pdf"
               hidden
               onChange={handleFileChange}
             />
@@ -161,33 +158,26 @@ export default function Page() {
 
         {/* LANGUAGE + TRANSLATE */}
         <div className="mt-6 bg-gray-50 rounded-xl p-6 flex flex-col md:flex-row gap-4 items-center justify-between">
-          {/* Language Dropdown */}
-          <div className="w-full md:w-auto flex flex-col text-left">
-            <label className="text-sm font-medium text-gray-700 mb-1">
-              Translate document to:
-            </label>
-            <select
-              value={selectedLanguage}
-              onChange={(e) => setSelectedLanguage(e.target.value)}
-              className="border border-gray-300 rounded-lg px-3 py-2 text-gray-900 focus:outline-none focus:ring-2 focus:ring-orange-500"
-            >
-              {seaLionLanguages.map((lang) => (
-                <option key={lang.code} value={lang.code}>
-                  {lang.label}
-                </option>
-              ))}
-            </select>
-          </div>
+          <select
+            value={selectedLanguage}
+            onChange={(e) => setSelectedLanguage(e.target.value)}
+            className="border border-gray-300 rounded-lg px-3 py-2"
+          >
+            {seaLionLanguages.map((lang) => (
+              <option key={lang.code} value={lang.code}>
+                {lang.label}
+              </option>
+            ))}
+          </select>
 
-          {/* Translate Button */}
           <button
             className={`px-6 py-3 rounded-full font-medium text-white transition
-    ${
-      file
-        ? "bg-orange-500 hover:bg-orange-600"
-        : "bg-gray-400 cursor-not-allowed"
-    }
-  `}
+              ${
+                file
+                  ? "bg-orange-500 hover:bg-orange-600"
+                  : "bg-gray-400 cursor-not-allowed"
+              }
+            `}
             disabled={!file || isUploading}
             onClick={handleTranslate}
           >
@@ -200,6 +190,23 @@ export default function Page() {
           <span className="text-sm">Your documents are safe and private.</span>
         </div>
       </div>
+
+      {/* ⭐ TRANSLATED OUTPUT */}
+      {/* {hasTranslated && (
+        <div className="w-full max-w-4xl bg-white rounded-2xl shadow-lg p-8">
+          <h2 className="text-2xl font-bold mb-4">Translated Document</h2>
+
+          {isUploading && (
+            <p className="text-gray-500 mb-4">
+              Translating… this may take a moment.
+            </p>
+          )}
+
+          <pre className="whitespace-pre-wrap text-gray-900 leading-relaxed max-h-[60vh] overflow-y-auto border border-gray-200 rounded-lg p-4">
+            {translatedText || "Waiting for translation…"}
+          </pre>
+        </div>
+      )} */}
     </div>
   );
 }
