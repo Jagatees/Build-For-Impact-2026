@@ -112,16 +112,20 @@ export default function VoiceChat() {
 
         let audioUrl = null;
         if (data.audioBase64) {
-          const byteCharacters = atob(data.audioBase64);
-          const byteNumbers = new Array(byteCharacters.length);
-          for (let i = 0; i < byteCharacters.length; i++) {
-            byteNumbers[i] = byteCharacters.charCodeAt(i);
+          try {
+            const byteCharacters = atob(data.audioBase64);
+            const byteNumbers = new Array(byteCharacters.length);
+            for (let i = 0; i < byteCharacters.length; i++) {
+              byteNumbers[i] = byteCharacters.charCodeAt(i);
+            }
+            const audioBlob = new Blob([new Uint8Array(byteNumbers)], { type: 'audio/mp3' });
+            audioUrl = URL.createObjectURL(audioBlob);
+            
+            // === USE HELPER INSTEAD OF DIRECT PLAY ===
+            playAudio(audioUrl); 
+          } catch (audioError) {
+            console.error('Error creating audio:', audioError);
           }
-          const audioBlob = new Blob([new Uint8Array(byteNumbers)], { type: 'audio/mp3' });
-          audioUrl = URL.createObjectURL(audioBlob);
-          
-          // === USE HELPER INSTEAD OF DIRECT PLAY ===
-          playAudio(audioUrl); 
         }
 
         setMessages(prev => [...prev, { 
@@ -132,12 +136,24 @@ export default function VoiceChat() {
         }]);
       } else {
         setMessages(prev => prev.filter(msg => msg.id !== tempId));
-        alert(data.error || "Could not understand audio.");
+        const errorMsg = data.error || "Could not understand audio.";
+        
+        // Show user-friendly error message
+        setMessages(prev => [...prev, { 
+          id: Date.now(), 
+          text: `❌ Error: ${errorMsg}${errorMsg.includes('API key') ? ' Please check your .env.local file.' : ''}`, 
+          type: 'bot' 
+        }]);
       }
 
     } catch (error) {
       console.error('Voice Error:', error);
-      alert("Error sending audio.");
+      setMessages(prev => prev.filter(msg => msg.id === tempId));
+      setMessages(prev => [...prev, { 
+        id: Date.now(), 
+        text: `❌ Error: ${error.message || 'Failed to process audio. Please try again.'}`, 
+        type: 'bot' 
+      }]);
     } finally {
       setIsLoading(false);
     }
