@@ -28,10 +28,9 @@ export async function POST(req) {
     console.log("📥 RAW REQUEST BODY:", body);
 
     const text = body?.text;
-    const language = body?.language || "en"; // ✅ SAFE DEFAULT
+    const language = body?.language || "en";
 
     if (!text || !text.trim()) {
-      console.error("❌ Missing text");
       return NextResponse.json(
         { error: "No text provided for review" },
         { status: 400 }
@@ -44,21 +43,23 @@ export async function POST(req) {
     console.log("🟡 LANGUAGE NAME:", languageName);
 
     /* ================================
-       🧠 SYSTEM PROMPT (STRICT)
+       🧠 SYSTEM PROMPT (BEST-EFFORT TRANSLATION)
        ================================ */
     const systemPrompt = `
 You are a Singapore Ministry of Manpower (MOM) employment advisor.
 
 IMPORTANT:
-- Quote ONLY exact English text from document
-- NEVER paraphrase quoted text
+- Quote ONLY exact English text from the document
+- NEVER paraphrase quoted English text
 
-LANGUAGE RULE (STRICT):
-- The following MUST be written ONLY in ${languageName}:
-  • Flagged Statement (translated)
-  • Why this is a concern (translated)
-- English in translated sections is FORBIDDEN
-- If unable, output: [TRANSLATION ERROR]
+TRANSLATION INSTRUCTION (IMPORTANT):
+- Translate the English sentence into clear, natural ${languageName}
+- Preserve meaning over word-for-word literalness
+- Maintain a neutral legal tone where possible
+- The translated fields MUST NOT be empty
+- If an exact legal equivalent does not exist, provide the closest understandable translation
+- DO NOT repeat the English sentence
+- DO NOT omit the translated sentence
 
 OUTPUT FORMAT (DO NOT DEVIATE):
 
@@ -68,13 +69,13 @@ Flagged Statement (exact quote from document):
 "<exact English sentence>"
 
 Flagged Statement (translated to ${languageName}):
-"<${languageName} ONLY>"
+"<${languageName} translation>"
 
 Why this is a concern (English):
 <English explanation>
 
 Why this is a concern (translated to ${languageName}):
-<${languageName} ONLY>
+<${languageName} explanation>
 
 Who to reach out to:
 <Employer / Supervisor / MOM officer / Employment agency>
@@ -112,7 +113,7 @@ ${text}
     }
 
     /* ================================
-       📡 CONSUME STREAM CORRECTLY
+       📡 CONSUME STREAM
        ================================ */
     const reader = response.body.getReader();
     const decoder = new TextDecoder("utf-8");
@@ -129,7 +130,6 @@ ${text}
     console.log("========== END RAW OUTPUT ==========\n");
 
     if (!fullText.trim()) {
-      console.error("❌ EMPTY SEA-LION OUTPUT");
       return NextResponse.json(
         { error: "Empty response from model" },
         { status: 500 }
@@ -175,15 +175,28 @@ ${text}
     });
 
     /* ================================
-       🚨 DEBUG + VALIDATION
+       🛡️ FALLBACK + DEBUG
        ================================ */
     console.log("========== PARSED ISSUES ==========");
+
     issues.forEach((i) => {
-      console.log(i);
-      if (language === "ta" && /[a-zA-Z]/.test(i.flaggedStatementTranslated)) {
-        console.error("❌ ENGLISH FOUND IN TAMIL FIELD");
+      if (!i.flaggedStatementTranslated) {
+        console.warn(
+          `⚠️ Empty translated clause detected (ISSUE ${i.issueNumber})`
+        );
+        i.flaggedStatementTranslated = "[Translation unavailable]";
       }
+
+      if (!i.concernTranslated) {
+        console.warn(
+          `⚠️ Empty translated concern detected (ISSUE ${i.issueNumber})`
+        );
+        i.concernTranslated = "[Translation unavailable]";
+      }
+
+      console.log(i);
     });
+
     console.log("========== END PARSED ==========\n");
 
     /* ================================
