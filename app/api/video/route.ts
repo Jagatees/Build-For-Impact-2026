@@ -66,13 +66,38 @@ function validatePromptSafety(prompt: string): { safe: boolean; reason?: string 
   return { safe: true }
 }
 
+// Calculate estimated speaking time from text
+// Average speaking rate: ~150 words per minute = ~2.5 words per second
+function calculateVideoDuration(text: string): number {
+  const words = text.trim().split(/\s+/).length
+  const speakingRate = 2.5 // words per second
+  const baseDuration = Math.ceil(words / speakingRate)
+  
+  // Add buffer for pauses, natural breaks, and ending silence
+  const bufferSeconds = 2 // 2 seconds for pauses and ending
+  
+  const totalDuration = baseDuration + bufferSeconds
+  
+  // Sora-2 supports: 4, 8, or 12 seconds
+  // Choose the closest supported duration that fits the content
+  if (totalDuration <= 4) {
+    return 4
+  } else if (totalDuration <= 8) {
+    return 8
+  } else {
+    return 12 // For longer scripts
+  }
+}
+
 export async function POST(request: Request) {
   try {
+    // prompt = the LLM response text (this IS the script that will be spoken in the video)
+    // We use this script length to calculate appropriate video duration
     const { prompt } = await request.json()
 
     if (!prompt || !prompt.trim()) {
       return NextResponse.json(
-        { error: 'Prompt is required' },
+        { error: 'Prompt (script) is required' },
         { status: 400 }
       )
     }
@@ -97,35 +122,72 @@ export async function POST(request: Request) {
       )
     }
 
-    // Enhance prompt to be migrant worker focused
-    const basePrompt = prompt.trim()
+    // The prompt IS the script (LLM response text that will be spoken in the video)
+    const script = prompt.trim() // This is the actual script/text that will be spoken
+    
+    // Calculate video duration based on the script length (how long it takes to speak this text)
+    const estimatedDuration = calculateVideoDuration(script)
+    
+    // Estimate processing time (in seconds) based on actual performance data
+    // Real data: 12s video took ~181 seconds (180983ms)
+    // Using conservative estimates with buffer for variability
+    const estimatedProcessingTime = estimatedDuration <= 4 ? 100 : estimatedDuration <= 8 ? 150 : 200
+    
+    // Calculate timing: finish speaking before the end, with buffer for silence
+    const speakingEndTime = estimatedDuration - 1 // Finish 1 second before end
+    const silenceDuration = 1 // 1 second of silence at the end
+    
+    console.log('Video duration calculation:', {
+      scriptLength: script.length,
+      wordCount: script.split(/\s+/).length,
+      estimatedDuration: estimatedDuration,
+      speakingEndTime: speakingEndTime
+    })
     
     // Create a focused prompt that guides video generation for migrant worker scenarios
-    // This ensures videos are helpful, educational, and relevant to all types of migrant workers
-    const enhancedPrompt = `A helpful educational video for migrant workers in Singapore: ${basePrompt}. 
+    // The script (prompt) will be spoken in the video, so we need to ensure proper timing
+    const enhancedPrompt = `A helpful educational video for migrant workers in Singapore. 
+    The script to be spoken is: "${script}"
     The video should be clear, supportive, and show practical step-by-step guidance. 
     Focus on workplace safety, workers' rights, what to do in emergencies, or helpful information for migrant workers. 
     Include diverse types of migrant workers: construction workers, domestic workers, factory workers, service workers, 
     healthcare workers, cleaners, security guards, and other migrant workers in Singapore. 
     Professional, informative, and culturally sensitive. 
     Make it easy to understand with clear visual demonstrations that represent various migrant worker occupations.
-    Important: The video must have a complete ending. Let the person finish speaking completely, 
-    show a natural conclusion, and end smoothly without abrupt cuts. The video should feel complete and finished.`
+    Critical timing instructions: The video is exactly ${estimatedDuration} seconds total. 
+    Speak the entire script clearly and finish all speaking within the first ${speakingEndTime} seconds. 
+    The script must be fully spoken and completed by second ${speakingEndTime}. 
+    Then include ${silenceDuration} full second of natural pause or complete silence at the end (final ${silenceDuration} second, seconds ${speakingEndTime + 1}-${estimatedDuration}). 
+    This ensures the final sentence is completely finished and heard before any ending. 
+    The video must have a complete ending with no abrupt cuts - finish speaking the complete script by second ${speakingEndTime}, 
+    show a natural conclusion, and end smoothly with silence/pause in the final ${silenceDuration} second.`
 
+    const startTime = Date.now()
+    
     console.log('Generating video with Replicate for migrant workers:', {
-      originalPrompt: basePrompt.substring(0, 100) + '...',
-      enhancedPrompt: enhancedPrompt.substring(0, 150) + '...'
+      scriptLength: script.length,
+      wordCount: script.split(/\s+/).length,
+      estimatedDuration: estimatedDuration,
+      estimatedProcessingTime: estimatedProcessingTime,
+      speakingEndTime: speakingEndTime,
+      silenceDuration: silenceDuration,
+      scriptPreview: script.substring(0, 100) + '...'
     })
 
     // Call Replicate Sora model
+    // Sora-2 supports duration: 4, 8, or 12 seconds (integer only)
+    // Duration is dynamically calculated based on script length
     const output = await replicate.run(
       "openai/sora-2",
       {
         input: {
-          prompt: enhancedPrompt
+          prompt: enhancedPrompt,
+          seconds: estimatedDuration // Dynamic duration based on script length
         }
       }
     )
+    
+    const actualProcessingTime = Math.round((Date.now() - startTime) / 1000)
 
     console.log('Replicate output:', output)
     console.log('Output type:', typeof output)
@@ -159,6 +221,8 @@ export async function POST(request: Request) {
     return NextResponse.json({
       videoUrl: videoUrl,
       status: 'completed',
+      estimatedProcessingTime: estimatedProcessingTime,
+      actualProcessingTime: actualProcessingTime,
       message: 'Here is your video response:'
     })
   } catch (error: any) {

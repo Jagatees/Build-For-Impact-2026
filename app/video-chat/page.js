@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import Link from 'next/link'
 import VideoGenerator from '@/components/VideoGenerator'
 
@@ -33,6 +33,20 @@ export default function VideoChat() {
   const [isLoading, setIsLoading] = useState(false)
   const [useStreaming, setUseStreaming] = useState(true) // Streaming on by default
   const [selectedLanguage, setSelectedLanguage] = useState('en') // Default: English
+  const [videoETAs, setVideoETAs] = useState({}) // Track ETA for each message: { messageId: { remainingSeconds, intervalId } }
+  const intervalsRef = useRef({}) // Track intervals for cleanup
+
+  // Cleanup intervals on unmount
+  useEffect(() => {
+    return () => {
+      // Clear all intervals when component unmounts
+      Object.values(intervalsRef.current).forEach((intervalId) => {
+        if (intervalId) {
+          clearInterval(intervalId)
+        }
+      })
+    }
+  }, [])
 
   const copyToClipboard = (text) => {
     navigator.clipboard.writeText(text).then(() => {
@@ -105,50 +119,155 @@ export default function VideoChat() {
 
       const llmResponse = chatData.message || userMessageText
       console.log('✅ Step 1 Complete: Got LLM response:', llmResponse.substring(0, 100))
+      console.log('📏 LLM response length:', llmResponse.length, 'characters')
 
-      // Step 2: Use LLM response to generate video
-      console.log('🎬 Step 2: Generating video from LLM response')
+      // Create bot message with LLM text immediately (before video is ready)
+      const botMessageId = Date.now() + 1
+      const botMessage = {
+        id: botMessageId,
+        text: llmResponse, // Show the LLM response text immediately
+        type: 'bot',
+        videoUrl: null,
+        status: 'processing', // Video is still processing
+        videoETA: null // Will be set when we get ETA from API
+      }
+      setMessages(prev => [...prev, botMessage])
+
+      // Step 2: Use LLM response to generate video with dynamic duration (in background)
+      console.log('🎬 Step 2: Generating video from LLM response with dynamic duration')
       
-      const videoResponse = await fetch('/api/video', {
+      // Start video generation in background
+      fetch('/api/video', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({ 
-          prompt: llmResponse // Use LLM response as video prompt
+          prompt: llmResponse // LLM response IS the script that will be spoken in the video
         })
       })
-      
-      console.log('📹 Video API response status:', videoResponse.status)
+      .then(async (videoResponse) => {
+        console.log('📹 Video API response status:', videoResponse.status)
 
-      let videoData
-      try {
-        videoData = await videoResponse.json()
-      } catch (parseError) {
-        const errorText = await videoResponse.text()
-        throw new Error(`Video API error (${videoResponse.status}): ${errorText.substring(0, 200)}`)
-      }
-
-      if (!videoResponse.ok) {
-        console.error('Video API Error:', videoData)
-        // Show user-friendly message for blocked content
-        if (videoData.blocked) {
-          throw new Error(videoData.error || 'This content cannot be generated. Please ask about topics related to migrant workers in Singapore.')
+        let videoData
+        try {
+          videoData = await videoResponse.json()
+        } catch (parseError) {
+          const errorText = await videoResponse.text()
+          throw new Error(`Video API error (${videoResponse.status}): ${errorText.substring(0, 200)}`)
         }
-        throw new Error(videoData.error || videoData.details || 'Failed to generate video')
-      }
 
-      // Create bot message with LLM text and video
-      const botMessage = {
-        id: Date.now() + 1,
-        text: llmResponse, // Show the LLM response text
-        type: 'bot',
-        videoUrl: videoData.videoUrl,
-        status: videoData.status || 'completed'
-      }
-      setMessages(prev => [...prev, botMessage])
+        if (!videoResponse.ok) {
+          console.error('Video API Error:', videoData)
+          // Show user-friendly message for blocked content
+          if (videoData.blocked) {
+            throw new Error(videoData.error || 'This content cannot be generated. Please ask about topics related to migrant workers in Singapore.')
+          }
+          throw new Error(videoData.error || videoData.details || 'Failed to generate video')
+        }
+
+        // Update ETA with actual estimate from API if available
+        if (videoData.estimatedProcessingTime) {
+          setVideoETAs(prev => {
+            const current = prev[botMessageId]
+            if (current) {
+              // Calculate elapsed time and adjust remaining time
+              const elapsedTime = current.initialETA - current.remainingSeconds
+              const newRemaining = Math.max(0, videoData.estimatedProcessingTime - elapsedTime)
+              return {
+                ...prev,
+                [botMessageId]: { 
+                  remainingSeconds: newRemaining, 
+                  intervalId: current.intervalId,
+                  initialETA: videoData.estimatedProcessingTime
+                }
+              }
+            }
+            return prev
+          })
+          
+          // Update message with new ETA
+          setMessages(prev => prev.map(msg => 
+            msg.id === botMessageId 
+              ? { ...msg, videoInitialETA: videoData.estimatedProcessingTime }
+              : msg
+          ))
+        }
+
+        // Clear ETA countdown when video is ready
+        if (intervalsRef.current[botMessageId]) {
+          clearInterval(intervalsRef.current[botMessageId])
+          delete intervalsRef.current[botMessageId]
+        }
+        setVideoETAs(prev => {
+          const newETAs = { ...prev }
+          delete newETAs[botMessageId]
+          return newETAs
+        })
+
+        // Update message with video
+        setMessages(prev => prev.map(msg => 
+          msg.id === botMessageId 
+            ? { ...msg, videoUrl: videoData.videoUrl, status: 'completed', videoETA: null }
+            : msg
+        ))
+        
+        console.log('✅ Step 2 Complete: Video generated and message updated')
+      })
+      .catch((error) => {
+        console.error('Video generation error:', error)
+        // Update message to show error
+        setMessages(prev => prev.map(msg => 
+          msg.id === botMessageId 
+            ? { ...msg, status: 'error', videoETA: null, text: msg.text + '\n\n⚠️ Video generation failed: ' + (error.message || 'Unknown error') }
+            : msg
+        ))
+        
+        // Clear ETA countdown on error
+        if (intervalsRef.current[botMessageId]) {
+          clearInterval(intervalsRef.current[botMessageId])
+          delete intervalsRef.current[botMessageId]
+        }
+        setVideoETAs(prev => {
+          const newETAs = { ...prev }
+          delete newETAs[botMessageId]
+          return newETAs
+        })
+      })
+
+      // Estimate ETA and start countdown (we'll update this when we get actual ETA from API)
+      // Default estimate based on actual performance: 4s=100s, 8s=150s, 12s=200s
+      // We'll use a conservative default and update when API responds
+      const defaultETA = 150 // seconds (conservative default for 8s video)
+      let remainingSeconds = defaultETA
+      let initialETA = defaultETA
       
-      console.log('✅ Step 2 Complete: Video generated and message added')
+      // Start countdown timer
+      const intervalId = setInterval(() => {
+        remainingSeconds -= 1
+        setVideoETAs(prev => ({
+          ...prev,
+          [botMessageId]: { remainingSeconds, intervalId, initialETA }
+        }))
+        
+        // Update message with current ETA
+        setMessages(prev => prev.map(msg => 
+          msg.id === botMessageId 
+            ? { ...msg, videoETA: remainingSeconds, videoInitialETA: initialETA }
+            : msg
+        ))
+        
+        if (remainingSeconds <= 0) {
+          clearInterval(intervalId)
+          delete intervalsRef.current[botMessageId]
+        }
+      }, 1000)
+      
+      intervalsRef.current[botMessageId] = intervalId
+      setVideoETAs(prev => ({
+        ...prev,
+        [botMessageId]: { remainingSeconds, intervalId, initialETA }
+      }))
     } catch (error) {
       console.error('Error:', error)
       // Show user-friendly error message
@@ -272,15 +391,65 @@ export default function VideoChat() {
                         </a>
                       </div>
                     ) : message.type === 'bot' && message.status === 'processing' && (
-                      <div className="video-processing">
-                        <span className="typing-indicator">
-                          <span></span>
-                          <span></span>
-                          <span></span>
-                        </span>
-                        <p style={{ marginTop: '0.5rem', fontSize: '0.9rem', color: '#666' }}>
-                          Generating video... This may take a moment.
-                        </p>
+                      <div className="video-processing" style={{ 
+                        marginTop: '1rem', 
+                        padding: '1rem', 
+                        background: '#f5f5f5', 
+                        borderRadius: '8px',
+                        border: '1px solid #e0e0e0'
+                      }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem' }}>
+                          <span className="typing-indicator">
+                            <span></span>
+                            <span></span>
+                            <span></span>
+                          </span>
+                          <span style={{ fontSize: '0.9rem', color: '#666', fontWeight: '500' }}>
+                            Generating video...
+                          </span>
+                        </div>
+                        {message.videoETA !== null && message.videoETA !== undefined && (
+                          <div style={{ marginTop: '0.75rem' }}>
+                            <div style={{ 
+                              display: 'flex', 
+                              justifyContent: 'space-between', 
+                              alignItems: 'center',
+                              marginBottom: '0.5rem'
+                            }}>
+                              <span style={{ fontSize: '0.85rem', color: '#666' }}>
+                                Estimated time remaining:
+                              </span>
+                              <span style={{ 
+                                fontSize: '1rem', 
+                                fontWeight: '600', 
+                                color: '#667eea',
+                                fontFamily: 'monospace'
+                              }}>
+                                {message.videoETA > 0 ? `${message.videoETA}s` : 'Almost ready...'}
+                              </span>
+                            </div>
+                            <div style={{
+                              width: '100%',
+                              height: '6px',
+                              background: '#e0e0e0',
+                              borderRadius: '3px',
+                              overflow: 'hidden'
+                            }}>
+                              <div style={{
+                                width: `${Math.max(0, Math.min(100, message.videoInitialETA ? ((message.videoInitialETA - message.videoETA) / message.videoInitialETA) * 100 : ((150 - message.videoETA) / 150) * 100))}%`,
+                                height: '100%',
+                                background: 'linear-gradient(90deg, #667eea 0%, #764ba2)',
+                                borderRadius: '3px',
+                                transition: 'width 1s linear'
+                              }} />
+                            </div>
+                          </div>
+                        )}
+                        {message.videoETA === null && (
+                          <p style={{ marginTop: '0.5rem', fontSize: '0.85rem', color: '#666' }}>
+                            This may take 2-3 minutes...
+                          </p>
+                        )}
                       </div>
                     )}
                   </div>
