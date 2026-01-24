@@ -143,6 +143,7 @@ ${chunk}
     /* ---------- Return JSON ---------- */
     return NextResponse.json({
       translatedText: finalTranslation,
+      originalText: extractedText,
     });
 
   } catch (err) {

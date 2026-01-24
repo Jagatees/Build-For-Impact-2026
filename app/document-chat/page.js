@@ -52,6 +52,8 @@ export default function Page() {
       // ✅ Store translation
       sessionStorage.setItem("translatedText", data.translatedText);
 
+      sessionStorage.setItem("originalText", data.originalText); // English text
+
       // ✅ Store metadata
       sessionStorage.setItem("language", selectedLanguage);
       sessionStorage.setItem("filename", file.name);

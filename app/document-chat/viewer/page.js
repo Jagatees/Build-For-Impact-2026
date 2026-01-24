@@ -1,18 +1,37 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 
 export default function ViewerPage() {
   const [pdfUrl, setPdfUrl] = useState(null);
   const [translatedText, setTranslatedText] = useState("");
+  const router = useRouter();
 
   useEffect(() => {
     const url = sessionStorage.getItem("pdfUrl");
     const text = sessionStorage.getItem("translatedText");
+    
 
     if (url) setPdfUrl(url);
     if (text) setTranslatedText(text);
   }, []);
+
+  // ✅ NEW FUNCTION
+  const handleFlawReview = () => {
+    if (!pdfUrl) {
+      alert("No document found to review.");
+      return;
+    }
+
+    // (Optional) Ensure translated text exists for later analysis
+    if (!translatedText) {
+      console.warn("No translated text found yet.");
+    }
+
+    // ✅ Navigate to review page
+    router.push("/document-chat/viewer/review");
+  };
 
   return (
     <div className="h-screen flex bg-gray-100">
@@ -66,9 +85,7 @@ export default function ViewerPage() {
                        bg-red-600 hover:bg-red-700
                        text-white font-medium
                        transition"
-            onClick={() => {
-              // Placeholder for flaw detection logic
-            }}
+            onClick={handleFlawReview}
           >
             Point out the flaws
           </button>
