@@ -1,0 +1,52 @@
+[
+  {
+    "id": "1769248771282",
+    "companyName": "SIT",
+    "timestamp": "2026-01-24T09:59:31.282Z",
+    "questions": [
+      {
+        "id": "question1",
+        "text": "Did you receive your salary on time as stated in your contract?",
+        "answer": "yes",
+        "votes": {
+          "helpful": 0,
+          "notHelpful": 0
+        }
+      },
+      {
+        "id": "question2",
+        "text": "Were you provided with adequate rest days as required by law?",
+        "answer": "yes",
+        "votes": {
+          "helpful": 0,
+          "notHelpful": 0
+        }
+      }
+    ]
+  },
+  {
+    "id": "1769248778782",
+    "companyName": "SIT",
+    "timestamp": "2026-01-24T09:59:38.782Z",
+    "questions": [
+      {
+        "id": "question1",
+        "text": "Did you receive your salary on time as stated in your contract?",
+        "answer": "yes",
+        "votes": {
+          "helpful": 0,
+          "notHelpful": 0
+        }
+      },
+      {
+        "id": "question2",
+        "text": "Were you provided with adequate rest days as required by law?",
+        "answer": "no",
+        "votes": {
+          "helpful": 0,
+          "notHelpful": 0
+        }
+      }
+    ]
+  }
+]

@@ -70,7 +70,8 @@ export default function FAQ() {
             <li><Link href="/">Home</Link></li>
             <li><Link href="/chat">Chat</Link></li>
             <li><Link href="/faq">FAQ</Link></li>
-            <li><Link href="/safety">Safety Inspector</Link></li>
+            <li><Link href="/company-review">Company Review</Link></li>
+            <li><Link href="/reviews">View Reviews</Link></li>
           </ul>
         </div>
       </nav>
