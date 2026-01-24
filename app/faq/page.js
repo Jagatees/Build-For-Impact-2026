@@ -71,6 +71,7 @@ export default function FAQ() {
             <li><Link href="/chat">Chat</Link></li>
             <li><Link href="/document-chat">Document Chat</Link></li>
             <li><Link href="/voice-chat">Voice Chat</Link></li>
+            <li><Link href="/video-chat">Video Chat</Link></li>
             <li><Link href="/faq">FAQ</Link></li>
             <li><Link href="/company-review">Company Review</Link></li>
             <li><Link href="/reviews">View Reviews</Link></li>

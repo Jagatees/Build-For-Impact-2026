@@ -14,9 +14,9 @@ const languages = [
   { code: 'id', name: 'Indonesian' }
 ]
 
-export default function VoiceChat() {
+export default function VideoChat() {
   const [messages, setMessages] = useState([
-    { id: 1, text: 'Hello! I\'m here to help you with questions about your rights as a migrant worker in Singapore, employment contracts, and finding support resources. How can I assist you today?', type: 'bot' }
+    { id: 1, text: 'Hello! I\'m here to help you with questions about your rights as a migrant worker in Singapore, employment contracts, and finding support resources. How can I assist you today?', type: 'bot', videoUrl: null }
   ])
   const [inputValue, setInputValue] = useState('')
   const [isLoading, setIsLoading] = useState(false)
@@ -49,75 +49,33 @@ export default function VoiceChat() {
     setMessages(prev => [...prev, userMessage])
 
     try {
-      // Get selected language name
-      const languageName = languages.find(lang => lang.code === selectedLanguage)?.name || 'English'
-      
-      // Add language instruction to the message
-      const messageWithLanguage = `${userMessageText}\n\nPlease reply in ${languageName}.`
-
-      // Build conversation history (last 10 messages for context)
-      const conversationHistory = messages
-        .filter(msg => msg.type === 'user' || msg.type === 'bot')
-        .slice(-10) // Last 10 messages
-        .map(msg => ({
-          role: msg.type === 'user' ? 'user' : 'assistant',
-          content: msg.text
-        }))
-
-      // Always use streaming
-      if (true) {
-        const response = await fetch('/api/chat/stream', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ 
-            message: messageWithLanguage,
-            conversationHistory: conversationHistory
-          })
+      // Call video generation API instead of text chat
+      const response = await fetch('/api/video-generate', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ 
+          prompt: userMessageText,
+          language: selectedLanguage
         })
+      })
 
-        if (!response.ok) {
-          let errorData
-          try {
-            errorData = await response.json()
-          } catch (parseError) {
-            const errorText = await response.text()
-            throw new Error(`Server error (${response.status}): ${errorText.substring(0, 200)}`)
-          }
-          const errorMsg = errorData.error || errorData.details || 'Failed to get response'
-          throw new Error(errorMsg)
-        }
+      const data = await response.json()
 
-        // Create a placeholder bot message that we'll update as chunks arrive
-        const botMessageId = Date.now() + 1
-        const botMessage = {
-          id: botMessageId,
-          text: '',
-          type: 'bot'
-        }
-        setMessages(prev => [...prev, botMessage])
-
-        // Read the stream
-        const reader = response.body.getReader()
-        const decoder = new TextDecoder()
-        let fullText = ''
-
-        while (true) {
-          const { done, value } = await reader.read()
-          if (done) break
-          
-          const chunk = decoder.decode(value, { stream: true })
-          fullText += chunk
-          
-          // Update the message with accumulated text in real-time
-          setMessages(prev => prev.map(msg => 
-            msg.id === botMessageId 
-              ? { ...msg, text: fullText }
-              : msg
-          ))
-        }
+      if (!response.ok) {
+        throw new Error(data.error || data.details || 'Failed to generate video')
       }
+
+      // Create bot message with video
+      const botMessage = {
+        id: Date.now() + 1,
+        text: data.message || 'Here is your video response:',
+        type: 'bot',
+        videoUrl: data.videoUrl,
+        status: data.status || 'completed'
+      }
+      setMessages(prev => [...prev, botMessage])
     } catch (error) {
       console.error('Error:', error)
       // Add error message
@@ -155,7 +113,7 @@ export default function VoiceChat() {
           <div className="chat-header">
             <div className="chat-header-top">
               <div>
-                <h1>Voice Chat</h1>
+                <h1>Video Chat</h1>
                 <p>Ask questions about your rights, contracts, and support resources</p>
               </div>
               <div className="language-selector">
@@ -184,15 +142,40 @@ export default function VoiceChat() {
               {messages.map((message) => (
                 <div key={message.id} className={`message-bubble ${message.type}`}>
                   <div className="message-content">
-                    {message.text}
+                    {message.text && <p>{message.text}</p>}
+                    {message.videoUrl ? (
+                      <div className="video-container">
+                        <video 
+                          controls 
+                          className="video-player"
+                          src={message.videoUrl}
+                          style={{ width: '100%', maxWidth: '500px', borderRadius: '8px' }}
+                        >
+                          Your browser does not support the video tag.
+                        </video>
+                      </div>
+                    ) : message.type === 'bot' && message.status === 'processing' && (
+                      <div className="video-processing">
+                        <span className="typing-indicator">
+                          <span></span>
+                          <span></span>
+                          <span></span>
+                        </span>
+                        <p style={{ marginTop: '0.5rem', fontSize: '0.9rem', color: '#666' }}>
+                          Generating video... This may take a moment.
+                        </p>
+                      </div>
+                    )}
                   </div>
-                  <button
-                    className="copy-button"
-                    onClick={() => copyToClipboard(message.text)}
-                    title="Copy message"
-                  >
-                    📋
-                  </button>
+                  {message.text && (
+                    <button
+                      className="copy-button"
+                      onClick={() => copyToClipboard(message.text)}
+                      title="Copy message"
+                    >
+                      📋
+                    </button>
+                  )}
                 </div>
               ))}
               {isLoading && (
@@ -203,6 +186,9 @@ export default function VoiceChat() {
                       <span></span>
                       <span></span>
                     </span>
+                    <p style={{ marginTop: '0.5rem', fontSize: '0.9rem', color: '#666' }}>
+                      Generating video response...
+                    </p>
                   </div>
                 </div>
               )}
