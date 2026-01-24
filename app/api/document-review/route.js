@@ -13,7 +13,7 @@ export async function POST(req) {
     if (!text || !text.trim()) {
       return NextResponse.json(
         { error: "No text provided for review" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -81,7 +81,7 @@ ${text}
       console.error("Sea-Lion review error:", err);
       return NextResponse.json(
         { error: "Review failed" },
-        { status: response.status }
+        { status: response.status },
       );
     }
 
@@ -92,27 +92,54 @@ ${text}
        ================================ */
     const rawIssues = fullText
       .split(/ISSUE\s+\d+/)
-      .map(i => i.trim())
+      .map((i) => i.trim())
       .filter(Boolean);
+    const issues = rawIssues.map((issueText, index) => {
+      console.log("========================================");
+      console.log(`🧩 RAW ISSUE TEXT (${index + 1})`);
+      console.log(issueText);
+      console.log("========================================");
 
-    const issues = rawIssues.map((issueText, index) => ({
-      issueNumber: index + 1,
-      raw: issueText,
-    }));
+      const problemMatch = issueText.match(
+        /Problem \(quoted exactly from document\):\s*"([^"]+)"/s,
+      );
+
+      const concernMatch = issueText.match(
+        /Why this is a concern:\s*([\s\S]*?)\nWho to reach out to:/s,
+      );
+
+      const actionMatch = issueText.match(/Who to reach out to:\s*([\s\S]*)$/s);
+
+      // ✅ Normalize line breaks ONCE here
+      const clean = (str) =>
+        str
+          ?.replace(/\r\n/g, "\n") // Windows → Unix
+          ?.replace(/\n{2,}/g, "\n\n") // avoid excessive gaps
+          ?.trim() || "";
+
+      // ✅ LOG EACH FIELD CLEARLY
+
+      return {
+        issueNumber: index + 1,
+        problem: clean(problemMatch?.[1]),
+        concern: clean(concernMatch?.[1]),
+        action: clean(actionMatch?.[1]),
+      };
+
+    });
 
     /* ================================
-       📤 RETURN JSON (FRONTEND-FRIENDLY)
+       📤 RETURN JSON
        ================================ */
     return NextResponse.json({
       issues,
-      rawOutput: fullText,
+      rawOutput: fullText, // keep for debugging / audits
     });
-
   } catch (err) {
     console.error("DOCUMENT REVIEW ERROR:", err);
     return NextResponse.json(
       { error: "Internal review error" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

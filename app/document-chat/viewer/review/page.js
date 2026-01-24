@@ -5,13 +5,13 @@ import { useRouter } from "next/navigation";
 
 export default function ReviewPage() {
   const [pdfUrl, setPdfUrl] = useState(null);
-  const [reviewText, setReviewText] = useState("");
+  const [issues, setIssues] = useState([]);
   const [loading, setLoading] = useState(false);
   const router = useRouter();
 
   useEffect(() => {
     const url = sessionStorage.getItem("pdfUrl");
-    const text = sessionStorage.getItem("originalText"); // English only
+    const text = sessionStorage.getItem("originalText"); // English OCR text
 
     if (!url || !text) {
       router.push("/document-chat");
@@ -24,7 +24,6 @@ export default function ReviewPage() {
 
   const runReview = async (text) => {
     setLoading(true);
-    setReviewText("");
 
     try {
       const response = await fetch("/api/document-review", {
@@ -33,42 +32,20 @@ export default function ReviewPage() {
         body: JSON.stringify({ text }),
       });
 
-      if (!response.ok || !response.body) {
+      if (!response.ok) {
         throw new Error("Review failed");
       }
 
-      const reader = response.body.getReader();
-      const decoder = new TextDecoder();
-
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-
-        const chunk = decoder.decode(value, { stream: true });
-        setReviewText((prev) => prev + chunk);
-      }
+      // ✅ BACKEND NOW RETURNS JSON
+      const data = await response.json();
+      setIssues(data.issues || []);
     } catch (err) {
       console.error(err);
-      setReviewText("");
+      setIssues([]);
     } finally {
       setLoading(false);
     }
   };
-
-  // ✅ Split issues by numbering (1., 2., 3., …)
-  const findings = reviewText
-    .split(/(?=ISSUE\s+\d+)/)
-    .map((item) => item.trim())
-    .filter((item) => item.startsWith("ISSUE"));
-
-  useEffect(() => {
-    findings.forEach((issue, index) => {
-      console.log("========================================");
-      console.log(`Issue ${index}`);
-      console.log(issue);
-      console.log("========================================");
-    });
-  }, [findings]);
 
   return (
     <div className="h-screen flex bg-gray-100">
@@ -79,7 +56,11 @@ export default function ReviewPage() {
         </div>
 
         <div className="flex-1 overflow-hidden">
-          <iframe src={pdfUrl} className="w-full h-full" />
+          <iframe
+            src={pdfUrl}
+            className="w-full h-full"
+            title="Original PDF"
+          />
         </div>
       </div>
 
@@ -96,25 +77,46 @@ export default function ReviewPage() {
             </p>
           )}
 
-          {!loading && findings.length === 0 && (
+          {!loading && issues.length === 0 && (
             <p className="text-gray-500">No issues found.</p>
           )}
 
-          {findings.map((item, index) => (
+          {issues.map((issue) => (
             <div
-              key={index}
+              key={issue.issueNumber}
               className="bg-white border-l-4 border-red-600
                          rounded-md p-4 shadow-sm"
             >
-              {/* ISSUE HEADER */}
+              {/* HEADER */}
               <div className="mb-2 text-sm font-semibold text-red-600">
-                Issue {index + 1}
+                Issue {issue.issueNumber}
               </div>
 
-              {/* ISSUE BODY */}
-              <div className="text-sm leading-relaxed text-gray-900 whitespace-pre-wrap">
-                {item}
-              </div>
+              {/* PROBLEM */}
+              {issue.problem && (
+                <>
+                  <p className="text-sm font-semibold">Problem:</p>
+                  <p className="italic mb-3">
+                    “{issue.problem}”
+                  </p>
+                </>
+              )}
+
+              {/* CONCERN */}
+              <p className="text-sm font-semibold">
+                Why this is a concern:
+              </p>
+              <p className="mb-3 whitespace-pre-wrap">
+                {issue.concern}
+              </p>
+
+              {/* ACTION */}
+              <p className="text-sm font-semibold">
+                Who to reach out to:
+              </p>
+              <p className="whitespace-pre-wrap">
+                {issue.action}
+              </p>
             </div>
           ))}
         </div>
