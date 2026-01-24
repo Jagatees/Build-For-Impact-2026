@@ -4,54 +4,75 @@ import { useEffect, useState } from "react";
 
 export default function ViewerPage() {
   const [pdfUrl, setPdfUrl] = useState(null);
-  const [translatedText, setTranslatedText] = useState(null);
+  const [translatedText, setTranslatedText] = useState("");
 
   useEffect(() => {
-    // Retrieve data from sessionStorage
-    const storedPdfUrl = sessionStorage.getItem("pdfUrl");
-    const storedTranslation = sessionStorage.getItem("translatedText");
+    const url = sessionStorage.getItem("pdfUrl");
+    const text = sessionStorage.getItem("translatedText");
 
-    if (storedPdfUrl) {
-      setPdfUrl(storedPdfUrl);
-    }
-
-    if (storedTranslation) {
-      setTranslatedText(storedTranslation);
-    }
+    if (url) setPdfUrl(url);
+    if (text) setTranslatedText(text);
   }, []);
 
   return (
-    <div className="h-screen flex">
-      {/* LEFT PANEL — ORIGINAL PDF */}
-      <div className="w-1/2 border-r bg-gray-50">
-        {pdfUrl ? (
-          <iframe
-            src={pdfUrl}
-            title="Original PDF"
-            className="w-full h-full"
-          />
-        ) : (
-          <div className="p-6 text-gray-500">
-            No PDF found. Please upload a document.
-          </div>
-        )}
+    <div className="h-screen flex bg-gray-100">
+      {/* LEFT: ORIGINAL PDF */}
+      <div className="w-1/2 flex flex-col bg-white border-r">
+        <div className="px-6 py-4 border-b">
+          <h2 className="text-sm font-semibold text-gray-700">
+            Original Document
+          </h2>
+        </div>
+
+        <div className="flex-1 overflow-hidden">
+          {pdfUrl ? (
+            <iframe
+              src={pdfUrl}
+              title="Original PDF"
+              className="w-full h-full"
+            />
+          ) : (
+            <p className="p-6 text-gray-500">
+              No document available.
+            </p>
+          )}
+        </div>
       </div>
 
-      {/* RIGHT PANEL — TRANSLATED TEXT */}
-      <div className="w-1/2 overflow-auto bg-white p-6">
-        <h2 className="text-xl font-bold mb-4">
-          Translated Document
-        </h2>
+      {/* RIGHT: TRANSLATION */}
+      <div className="w-1/2 flex flex-col bg-gray-50">
+        <div className="px-6 py-4 border-b">
+          <h2 className="text-sm font-semibold text-gray-700">
+            Translated Version
+          </h2>
+        </div>
 
-        {translatedText ? (
-          <pre className="whitespace-pre-wrap text-gray-900 leading-relaxed">
-            {translatedText}
-          </pre>
-        ) : (
-          <p className="text-gray-500">
-            No translation available.
-          </p>
-        )}
+        <div className="flex-1 overflow-y-auto px-6 py-5">
+          {translatedText ? (
+            <div className="whitespace-pre-wrap leading-relaxed text-gray-900 text-sm">
+              {translatedText}
+            </div>
+          ) : (
+            <p className="text-gray-500">
+              Translation not available.
+            </p>
+          )}
+        </div>
+
+        {/* ACTION FOOTER */}
+        <div className="px-6 py-4 border-t bg-white">
+          <button
+            className="w-full py-3 rounded-md
+                       bg-red-600 hover:bg-red-700
+                       text-white font-medium
+                       transition"
+            onClick={() => {
+              // Placeholder for flaw detection logic
+            }}
+          >
+            Point out the flaws
+          </button>
+        </div>
       </div>
     </div>
   );

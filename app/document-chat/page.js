@@ -191,22 +191,7 @@ export default function Page() {
         </div>
       </div>
 
-      {/* ⭐ TRANSLATED OUTPUT */}
-      {/* {hasTranslated && (
-        <div className="w-full max-w-4xl bg-white rounded-2xl shadow-lg p-8">
-          <h2 className="text-2xl font-bold mb-4">Translated Document</h2>
-
-          {isUploading && (
-            <p className="text-gray-500 mb-4">
-              Translating… this may take a moment.
-            </p>
-          )}
-
-          <pre className="whitespace-pre-wrap text-gray-900 leading-relaxed max-h-[60vh] overflow-y-auto border border-gray-200 rounded-lg p-4">
-            {translatedText || "Waiting for translation…"}
-          </pre>
-        </div>
-      )} */}
+     
     </div>
   );
 }
