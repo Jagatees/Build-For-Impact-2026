@@ -12,6 +12,9 @@ export default function ReviewPage() {
   useEffect(() => {
     const url = sessionStorage.getItem("pdfUrl");
     const text = sessionStorage.getItem("originalText"); // English OCR text
+    const language = sessionStorage.getItem("language") || "en"; // ✅ READ LANGUAGE
+
+    console.log("🌐 Review page language:", language);
 
     if (!url || !text) {
       router.push("/document-chat");
@@ -19,28 +22,39 @@ export default function ReviewPage() {
     }
 
     setPdfUrl(url);
-    runReview(text);
+    runReview(text, language); // ✅ PASS LANGUAGE
   }, [router]);
 
-  const runReview = async (text) => {
+  const runReview = async (text, language) => {
     setLoading(true);
 
     try {
+      console.log("📤 Sending review request:", {
+        textLength: text.length,
+        language,
+      });
+
       const response = await fetch("/api/document-review", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ text }),
+        body: JSON.stringify({
+          text,
+          language, // ✅ REQUIRED
+        }),
       });
 
       if (!response.ok) {
+        const err = await response.text();
+        console.error("❌ Review API error:", err);
         throw new Error("Review failed");
       }
 
-      // ✅ BACKEND NOW RETURNS JSON
       const data = await response.json();
+      console.log("📥 Review API response:", data);
+
       setIssues(data.issues || []);
     } catch (err) {
-      console.error(err);
+      console.error("🔥 Review error:", err);
       setIssues([]);
     } finally {
       setLoading(false);
@@ -56,11 +70,7 @@ export default function ReviewPage() {
         </div>
 
         <div className="flex-1 overflow-hidden">
-          <iframe
-            src={pdfUrl}
-            className="w-full h-full"
-            title="Original PDF"
-          />
+          <iframe src={pdfUrl} className="w-full h-full" title="Original PDF" />
         </div>
       </div>
 
@@ -84,39 +94,46 @@ export default function ReviewPage() {
           {issues.map((issue) => (
             <div
               key={issue.issueNumber}
-              className="bg-white border-l-4 border-red-600
-                         rounded-md p-4 shadow-sm"
+              className="bg-white border-l-4 border-red-600 rounded-md p-4 shadow-sm"
             >
               {/* HEADER */}
               <div className="mb-2 text-sm font-semibold text-red-600">
                 Issue {issue.issueNumber}
               </div>
 
-              {/* PROBLEM */}
-              {issue.problem && (
-                <>
-                  <p className="text-sm font-semibold">Problem:</p>
-                  <p className="italic mb-3">
-                    “{issue.problem}”
-                  </p>
-                </>
-              )}
-
-              {/* CONCERN */}
+              {/* FLAGGED STATEMENT (ENGLISH) */}
               <p className="text-sm font-semibold">
-                Why this is a concern:
+                Flagged Statement (English):
+              </p>
+              <p className="italic mb-3">“{issue.flaggedStatement || "—"}”</p>
+
+              {/* FLAGGED STATEMENT (TRANSLATED) */}
+              <p className="text-sm font-semibold">
+                Flagged Statement (Translated):
+              </p>
+              <p className="italic mb-3">
+                “{issue.flaggedStatementTranslated || "—"}”
+              </p>
+
+              {/* CONCERN (ENGLISH) */}
+              <p className="text-sm font-semibold">
+                Why this is a concern (English):
               </p>
               <p className="mb-3 whitespace-pre-wrap">
-                {issue.concern}
+                {issue.concernEnglish || "—"}
+              </p>
+
+              {/* CONCERN (TRANSLATED) */}
+              <p className="text-sm font-semibold">
+                Why this is a concern (Translated):
+              </p>
+              <p className="mb-3 whitespace-pre-wrap">
+                {issue.concernTranslated || "—"}
               </p>
 
               {/* ACTION */}
-              <p className="text-sm font-semibold">
-                Who to reach out to:
-              </p>
-              <p className="whitespace-pre-wrap">
-                {issue.action}
-              </p>
+              <p className="text-sm font-semibold">Who to reach out to:</p>
+              <p className="whitespace-pre-wrap">{issue.action || "—"}</p>
             </div>
           ))}
         </div>
