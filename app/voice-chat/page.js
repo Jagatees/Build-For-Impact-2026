@@ -14,7 +14,7 @@ const languages = [
   { code: 'id', name: 'Indonesian' }
 ]
 
-export default function Chat() {
+export default function VoiceChat() {
   const [messages, setMessages] = useState([
     { id: 1, text: 'Hello! I\'m here to help you with questions about your rights as a migrant worker in Singapore, employment contracts, and finding support resources. How can I assist you today?', type: 'bot' }
   ])
@@ -117,43 +117,6 @@ export default function Chat() {
               : msg
           ))
         }
-      } else {
-        // Non-streaming response
-        const response = await fetch('/api/chat', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ 
-            message: userMessageText,
-            conversationHistory: conversationHistory,
-            useStreaming: false
-          })
-        })
-
-        let data
-        try {
-          data = await response.json()
-        } catch (parseError) {
-          const errorText = await response.text()
-          throw new Error(`Server error (${response.status}): ${errorText.substring(0, 200)}`)
-        }
-
-        if (!response.ok) {
-          if (response.status === 429) {
-            throw new Error(`Rate limit exceeded. Please wait ${data.retryAfter || 60} seconds before trying again.`)
-          }
-          const errorMsg = data.error || data.details || 'Failed to get response'
-          throw new Error(errorMsg)
-        }
-
-        // Add bot response
-        const botMessage = {
-          id: messages.length + 2,
-          text: data.message,
-          type: 'bot'
-        }
-        setMessages(prev => [...prev, botMessage])
       }
     } catch (error) {
       console.error('Error:', error)
@@ -191,7 +154,7 @@ export default function Chat() {
           <div className="chat-header">
             <div className="chat-header-top">
               <div>
-                <h1>Chat Assistant</h1>
+                <h1>Voice Chat</h1>
                 <p>Ask questions about your rights, contracts, and support resources</p>
               </div>
               <div className="language-selector">
