@@ -22,9 +22,11 @@ export default function DocumentChat() {
   const [isLoading, setIsLoading] = useState(false)
   const [useStreaming, setUseStreaming] = useState(true) // Streaming on by default
   const [selectedLanguage, setSelectedLanguage] = useState('en') // Default: English
-  const [pdfText, setPdfText] = useState(null) // Store extracted PDF text
+  const [pdfText, setPdfText] = useState(null) // Store extracted PDF text (original)
+  const [pdfTranslatedText, setPdfTranslatedText] = useState(null) // Store translated PDF text
   const [pdfInfo, setPdfInfo] = useState(null) // Store PDF metadata
   const [isUploading, setIsUploading] = useState(false) // Track PDF upload status
+  const [isTranslating, setIsTranslating] = useState(false) // Track translation status
 
   const copyToClipboard = (text) => {
     navigator.clipboard.writeText(text).then(() => {
@@ -63,13 +65,66 @@ export default function DocumentChat() {
       setPdfText(data.text)
       setPdfInfo(data.info)
       
-      // Add a message indicating PDF was uploaded
-      const uploadMessage = {
-        id: Date.now(),
-        text: `📄 PDF uploaded: ${data.info.title || file.name} (${data.pages} pages)\n\nI've analyzed your document. You can now ask me questions about it!`,
-        type: 'bot'
+      // Translate the PDF text based on selected language
+      if (data.text && selectedLanguage) {
+        setIsTranslating(true)
+        try {
+          const translateResponse = await fetch('/api/translate', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              text: data.text,
+              targetLanguage: selectedLanguage
+            })
+          })
+
+          const translateData = await translateResponse.json()
+          
+          if (translateResponse.ok && translateData.success) {
+            setPdfTranslatedText(translateData.translatedText)
+            
+            // Add a message indicating PDF was uploaded and translated
+            const languageName = languages.find(lang => lang.code === selectedLanguage)?.name || 'English'
+            const uploadMessage = {
+              id: Date.now(),
+              text: `📄 PDF uploaded: ${data.info.title || file.name} (${data.pages} pages)\n\n✅ Document translated to ${languageName}!\n\nI've analyzed your document. You can now ask me questions about it!`,
+              type: 'bot'
+            }
+            setMessages(prev => [...prev, uploadMessage])
+          } else {
+            // If translation fails, still show uploaded message
+            setPdfTranslatedText(null)
+            const uploadMessage = {
+              id: Date.now(),
+              text: `📄 PDF uploaded: ${data.info.title || file.name} (${data.pages} pages)\n\nI've analyzed your document. You can now ask me questions about it!`,
+              type: 'bot'
+            }
+            setMessages(prev => [...prev, uploadMessage])
+          }
+        } catch (translateError) {
+          console.error('Translation error:', translateError)
+          // Continue even if translation fails
+          setPdfTranslatedText(null)
+          const uploadMessage = {
+            id: Date.now(),
+            text: `📄 PDF uploaded: ${data.info.title || file.name} (${data.pages} pages)\n\nI've analyzed your document. You can now ask me questions about it!`,
+            type: 'bot'
+          }
+          setMessages(prev => [...prev, uploadMessage])
+        } finally {
+          setIsTranslating(false)
+        }
+      } else {
+        // No translation needed or no text
+        const uploadMessage = {
+          id: Date.now(),
+          text: `📄 PDF uploaded: ${data.info.title || file.name} (${data.pages} pages)\n\nI've analyzed your document. You can now ask me questions about it!`,
+          type: 'bot'
+        }
+        setMessages(prev => [...prev, uploadMessage])
       }
-      setMessages(prev => [...prev, uploadMessage])
     } catch (error) {
       console.error('Error uploading PDF:', error)
       alert(error.message || 'Failed to process PDF. Please try again.')
@@ -82,6 +137,7 @@ export default function DocumentChat() {
 
   const clearPdf = () => {
     setPdfText(null)
+    setPdfTranslatedText(null)
     setPdfInfo(null)
     const clearMessage = {
       id: Date.now(),
@@ -89,6 +145,43 @@ export default function DocumentChat() {
       type: 'bot'
     }
     setMessages(prev => [...prev, clearMessage])
+  }
+
+  // Re-translate PDF when language changes
+  const handleLanguageChange = async (newLanguage) => {
+    setSelectedLanguage(newLanguage)
+    
+    // If PDF is loaded, re-translate it
+    if (pdfText && newLanguage) {
+      setIsTranslating(true)
+      try {
+        const translateResponse = await fetch('/api/translate', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            text: pdfText,
+            targetLanguage: newLanguage
+          })
+        })
+
+        const translateData = await translateResponse.json()
+        
+        if (translateResponse.ok && translateData.success) {
+          setPdfTranslatedText(translateData.translatedText)
+        } else {
+          setPdfTranslatedText(null)
+        }
+      } catch (translateError) {
+        console.error('Translation error:', translateError)
+        setPdfTranslatedText(null)
+      } finally {
+        setIsTranslating(false)
+      }
+    } else {
+      setPdfTranslatedText(null)
+    }
   }
 
   const handleSend = async (e) => {
@@ -112,11 +205,17 @@ export default function DocumentChat() {
       const languageName = languages.find(lang => lang.code === selectedLanguage)?.name || 'English'
       
       // Build the message with PDF context if available
+      // Use translated text if available, otherwise use original
       let messageWithContext = userMessageText
       
       if (pdfText) {
+        // Use translated PDF text if available and language is not English
+        const pdfContentToUse = (pdfTranslatedText && selectedLanguage !== 'en') 
+          ? pdfTranslatedText 
+          : pdfText
+        
         // Include PDF text in the context
-        const pdfContext = `\n\n--- Document Content ---\n${pdfText.substring(0, 8000)}\n--- End Document ---\n\n`
+        const pdfContext = `\n\n--- Document Content ---\n${pdfContentToUse.substring(0, 8000)}\n--- End Document ---\n\n`
         messageWithContext = `Document context:${pdfContext}User question: ${userMessageText}\n\nPlease answer based on the document content above. If the document doesn't contain relevant information, say so.`
       }
       
@@ -233,9 +332,9 @@ export default function DocumentChat() {
                 <select
                   id="language-select"
                   value={selectedLanguage}
-                  onChange={(e) => setSelectedLanguage(e.target.value)}
+                  onChange={(e) => handleLanguageChange(e.target.value)}
                   className="language-dropdown"
-                  disabled={isLoading}
+                  disabled={isLoading || isTranslating}
                 >
                   {languages.map(lang => (
                     <option key={lang.code} value={lang.code}>
@@ -266,11 +365,15 @@ export default function DocumentChat() {
                 />
                 {pdfText && (
                   <div className="pdf-info">
-                    <span className="pdf-name">📄 {pdfInfo?.title || 'Document loaded'}</span>
+                    <span className="pdf-name">
+                      📄 {pdfInfo?.title || 'Document loaded'}
+                      {isTranslating && <span style={{ marginLeft: '0.5rem', fontSize: '0.85rem', color: '#667eea' }}>🔄 Translating...</span>}
+                      {pdfTranslatedText && !isTranslating && <span style={{ marginLeft: '0.5rem', fontSize: '0.85rem', color: '#10b981' }}>✓ Translated</span>}
+                    </span>
                     <button 
                       onClick={clearPdf} 
                       className="clear-pdf-button"
-                      disabled={isLoading}
+                      disabled={isLoading || isTranslating}
                       title="Clear document"
                     >
                       ✕
@@ -278,6 +381,45 @@ export default function DocumentChat() {
                   </div>
                 )}
               </div>
+              
+              {/* Translated Text Display */}
+              {pdfText && (
+                <div className="translated-text-section">
+                  <div className="translated-text-header">
+                    <h3>
+                      📄 Document Content 
+                      {isTranslating ? (
+                        <span style={{ marginLeft: '0.5rem', fontSize: '0.85rem', color: '#667eea', fontWeight: 'normal' }}>
+                          (Translating to {languages.find(lang => lang.code === selectedLanguage)?.name || 'English'}...)
+                        </span>
+                      ) : (
+                        <span style={{ marginLeft: '0.5rem', fontSize: '0.85rem', color: '#666', fontWeight: 'normal' }}>
+                          ({pdfTranslatedText ? languages.find(lang => lang.code === selectedLanguage)?.name : 'Original'} - {selectedLanguage === 'en' ? 'English' : languages.find(lang => lang.code === selectedLanguage)?.name || 'English'})
+                        </span>
+                      )}
+                    </h3>
+                    <button
+                      onClick={() => {
+                        const textToCopy = pdfTranslatedText || pdfText
+                        copyToClipboard(textToCopy)
+                      }}
+                      className="copy-translated-button"
+                      title="Copy text"
+                      disabled={isTranslating}
+                    >
+                      📋 Copy
+                    </button>
+                  </div>
+                  <textarea
+                    className="translated-text-box"
+                    value={isTranslating ? 'Translating document content... Please wait.' : (pdfTranslatedText || pdfText)}
+                    readOnly
+                    rows={12}
+                    placeholder="Document content will appear here..."
+                    disabled={isTranslating}
+                  />
+                </div>
+              )}
             </div>
           </div>
 
