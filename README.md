@@ -18,15 +18,16 @@ First, install the dependencies:
 npm install
 ```
 
-### Configure Sea Lion AI API
+### Configure Environment Variables
 
-The app uses a custom Sea Lion AI API endpoint. The default endpoint is:
-- **Base URL**: `https://cf-sealion01.jagateesvaran.workers.dev`
-
-You can optionally override this by creating a `.env.local` file:
+Create a `.env.local` file in the root directory with your API keys:
 
 ```env
+# Sea Lion AI API (optional - defaults to https://cf-sealion01.jagateesvaran.workers.dev)
 SEA_LION_API_URL="https://cf-sealion01.jagateesvaran.workers.dev"
+
+# OpenAI API (for video generation and vision features)
+OPENAI_API_KEY="your_openai_api_key_here"
 ```
 
 **API Endpoints:**
@@ -34,6 +35,7 @@ SEA_LION_API_URL="https://cf-sealion01.jagateesvaran.workers.dev"
 - `/stream` - Streaming chat completion (Server-Sent Events)
 
 **⚠️ IMPORTANT SECURITY NOTE**: 
+- Always use `.env.local` (not `.env`) - this file is automatically ignored by git
 - Never commit your `.env.local` file to GitHub
 - The API is called from the backend (API routes), never exposed to the frontend
 

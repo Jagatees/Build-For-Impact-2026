@@ -1317,3 +1317,31 @@ select.form-input {
     font-size: 2rem;
   }
 }
+
+/* Video Chat Styles */
+.video-container {
+  margin-top: 0.75rem;
+  width: 100%;
+}
+
+.video-player {
+  width: 100%;
+  max-width: 500px;
+  border-radius: 8px;
+  background: #000;
+}
+
+.video-processing {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 1rem;
+}
+
+.message-content p {
+  margin-bottom: 0.5rem;
+}
+
+.message-content p:last-child {
+  margin-bottom: 0;
+}
