@@ -14,7 +14,7 @@ const languages = [
   { code: 'id', name: 'Indonesian' }
 ]
 
-export default function VoiceChat() {
+export default function VideoChat() {
   const [messages, setMessages] = useState([
     { id: 1, text: 'Hello! I\'m here to help you with questions about your rights as a migrant worker in Singapore, employment contracts, and finding support resources. How can I assist you today?', type: 'bot' }
   ])
@@ -155,7 +155,7 @@ export default function VoiceChat() {
           <div className="chat-header">
             <div className="chat-header-top">
               <div>
-                <h1>Voice Chat</h1>
+                <h1>Video Chat</h1>
                 <p>Ask questions about your rights, contracts, and support resources</p>
               </div>
               <div className="language-selector">
