@@ -37,13 +37,52 @@ export default function Page() {
       const arrayBuffer = await file.arrayBuffer();
       
       // Dynamically import pdfjs-dist for client-side only
-      const pdfjsLib = await import('pdfjs-dist');
+      let pdfjsLib;
       
-      // Set worker source - use version 5.4.296 to match the installed package
-      // This ensures API and Worker versions are compatible
-      pdfjsLib.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@5.4.296/build/pdf.worker.min.mjs`;
+      // Ensure we're in browser environment
+      if (typeof window === 'undefined') {
+        throw new Error("PDF processing must run in browser");
+      }
       
-      // Load the PDF document
+      try {
+        // Import pdfjs-dist - handle different export formats
+        const pdfjsModule = await import('pdfjs-dist');
+        
+        // Try different ways to access the library
+        pdfjsLib = pdfjsModule.default || 
+                   pdfjsModule.pdfjsLib || 
+                   pdfjsModule;
+        
+        // Validate we have the library
+        if (!pdfjsLib) {
+          throw new Error("PDF.js module returned empty");
+        }
+        
+        // Check for getDocument - try different property names
+        if (typeof pdfjsLib.getDocument !== 'function') {
+          // Try alternative exports
+          pdfjsLib = pdfjsModule.getDocument ? pdfjsModule : pdfjsLib;
+          if (typeof pdfjsLib.getDocument !== 'function') {
+            throw new Error(`PDF.js getDocument not found. Available: ${Object.keys(pdfjsLib).join(', ')}`);
+          }
+        }
+        
+        // Configure worker
+        if (pdfjsLib.GlobalWorkerOptions) {
+          const version = pdfjsLib.version || '5.4.530';
+          pdfjsLib.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${version}/build/pdf.worker.min.mjs`;
+        }
+      } catch (importError) {
+        console.error("PDF.js import error:", importError);
+        const errorDetails = importError.message || String(importError);
+        throw new Error(`Failed to load PDF.js: ${errorDetails}. Please restart the dev server (npm run dev) and try again.`);
+      }
+      
+      // Final check
+      if (!pdfjsLib || typeof pdfjsLib.getDocument !== 'function') {
+        throw new Error("PDF.js library is missing getDocument function");
+      }
+      
       const loadingTask = pdfjsLib.getDocument({ 
         data: arrayBuffer,
         useSystemFonts: true 
