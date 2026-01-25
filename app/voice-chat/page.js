@@ -2,7 +2,8 @@
 
 import { useState, useRef, useEffect } from 'react'
 import Link from 'next/link'
-import { AudioRecorder } from '@/utils/audio-recorder' 
+import { AudioRecorder } from '@/utils/audio-recorder'
+import Navigation from '@/components/Navigation' 
 
 const languages = [
   { code: 'en', name: 'English' },
@@ -147,18 +148,7 @@ export default function VoiceChat() {
       `}</style>
 
       {/* NAV */}
-      <nav style={{ padding: '1rem 2rem', background: 'white', borderBottom: '1px solid #e5e7eb' }}>
-        <div style={{ maxWidth: '1200px', margin: '0 auto', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-            <div style={{ fontSize: '1.5rem' }}>🔊</div>
-            <h2 style={{ margin: 0, fontSize: '1.5rem', fontWeight: '600', color: '#2d3748' }}>Build For Impact</h2>
-          </div>
-          <ul style={{ display: 'flex', listStyle: 'none', gap: '2rem' }}>
-             <li><Link href="/" style={{ textDecoration: 'none', color: '#2d3748' }}>Home</Link></li>
-             <li><Link href="/voice-chat" style={{ textDecoration: 'none', color: '#ff6b35', fontWeight: '600' }}>Voice Chat</Link></li>
-          </ul>
-        </div>
-      </nav>
+      <Navigation />
 
       {/* MAIN */}
       <main style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '2rem', maxWidth: '800px', margin: '0 auto', width: '100%' }}>

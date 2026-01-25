@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
+import Navigation from '@/components/Navigation'
 
 export default function FAQ() {
   const [openIndex, setOpenIndex] = useState(null)
@@ -63,21 +64,7 @@ export default function FAQ() {
 
   return (
     <div>
-      <nav className="nav">
-        <div className="nav-content">
-          <h2>Build For Impact</h2>
-          <ul className="nav-links">
-            <li><Link href="/">Home</Link></li>
-            <li><Link href="/chat">Chat</Link></li>
-            <li><Link href="/document-chat">Document Chat</Link></li>
-            <li><Link href="/voice-chat">Voice Chat</Link></li>
-            <li><Link href="/video-chat">Video Chat</Link></li>
-            <li><Link href="/faq">FAQ</Link></li>
-            <li><Link href="/company-review">Company Review</Link></li>
-            <li><Link href="/reviews">View Reviews</Link></li>
-          </ul>
-        </div>
-      </nav>
+      <Navigation />
 
       <div className="container">
         <div className="card">

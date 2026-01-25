@@ -1,41 +1,14 @@
 'use client'
 
 import Link from 'next/link'
-import Image from 'next/image'
+import Navigation from '@/components/Navigation'
 
 export default function Home() {
   return (
     <div className="landing-page">
       
       {/* --- NAVIGATION --- */}
-      <header className="navbar">
-        <div className="nav-container">
-          <Link href="/" className="brand-logo">
-            <div className="logo-wrapper">
-              <Image 
-                src="/logo.png" 
-                alt="AbangSG Logo" 
-                width={40} 
-                height={40} 
-                className="logo-img"
-              />
-            </div>
-            <span className="brand-name">AbangSG</span>
-          </Link>
-
-          <nav className="nav-links">
-            <Link href="/" className="nav-item active">Home</Link>
-            <Link href="/chat" className="nav-item">AI Chat</Link>
-            <Link href="/voice-chat" className="nav-item">Voice</Link>
-            <Link href="/reviews" className="nav-item">Reviews</Link>
-            <Link href="/faq" className="nav-item">FAQ</Link>
-          </nav>
-
-          <div className="nav-cta">
-             <Link href="/chat" className="btn-small">Get Help</Link>
-          </div>
-        </div>
-      </header>
+      <Navigation />
 
       {/* --- HERO SECTION --- */}
       <section className="hero">

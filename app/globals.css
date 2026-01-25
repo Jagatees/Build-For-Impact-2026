@@ -25,6 +25,16 @@ body {
   color: #333;
 }
 
+/* CSS Variables for consistent theming */
+:root {
+  --primary: #2563EB;
+  --primary-dark: #1E40AF;
+  --accent: #F97316;
+  --bg-soft: #F8FAFC;
+  --text-main: #1E293B;
+  --text-muted: #64748B;
+}
+
 a {
   color: inherit;
   text-decoration: none;
@@ -36,6 +46,122 @@ a {
   padding: 2rem;
 }
 
+/* Navigation Styles - Used across all pages */
+.navbar {
+  position: sticky;
+  top: 0;
+  z-index: 1000;
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(10px);
+  border-bottom: 1px solid #e2e8f0;
+  width: 100%;
+  display: block !important;
+  visibility: visible !important;
+}
+
+.nav-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 1rem 2rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.brand-logo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  text-decoration: none;
+}
+
+.logo-wrapper {
+  border-radius: 8px;
+  overflow: hidden;
+  display: flex;
+  width: 40px;
+  height: 40px;
+  flex-shrink: 0;
+}
+
+.logo-img {
+  width: 40px;
+  height: 40px;
+  object-fit: contain;
+}
+
+.brand-name {
+  font-weight: 800;
+  font-size: 1.25rem;
+  color: #1E293B;
+  letter-spacing: -0.5px;
+}
+
+.nav-links {
+  display: flex;
+  gap: 2rem;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  align-items: center;
+}
+
+.nav-item {
+  text-decoration: none;
+  color: #64748B;
+  font-weight: 500;
+  font-size: 0.95rem;
+  transition: color 0.2s;
+}
+
+.nav-item:hover,
+.nav-item.active {
+  color: #2563EB;
+}
+
+.nav-cta {
+  display: none;
+}
+
+@media (min-width: 768px) {
+  .nav-cta {
+    display: block;
+  }
+}
+
+/* Responsive navigation */
+@media (max-width: 768px) {
+  .nav-links {
+    gap: 1rem;
+    font-size: 0.85rem;
+  }
+  
+  .nav-container {
+    padding: 1rem;
+    flex-wrap: wrap;
+  }
+  
+  .brand-name {
+    font-size: 1.1rem;
+  }
+}
+
+.btn-small {
+  background: #1E293B;
+  color: white;
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+  text-decoration: none;
+  font-size: 0.9rem;
+  font-weight: 600;
+  transition: background 0.2s;
+}
+
+.btn-small:hover {
+  background: black;
+}
+
+/* Legacy nav styles for backward compatibility */
 .nav {
   background: rgba(255, 255, 255, 0.95);
   padding: 1rem 2rem;
@@ -49,12 +175,6 @@ a {
   display: flex;
   justify-content: space-between;
   align-items: center;
-}
-
-.nav-links {
-  display: flex;
-  gap: 2rem;
-  list-style: none;
 }
 
 .nav-links a {

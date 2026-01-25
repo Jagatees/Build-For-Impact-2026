@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from 'react'
 import Link from 'next/link'
 import VideoGenerator from '@/components/VideoGenerator'
+import Navigation from '@/components/Navigation'
 
 const languages = [
   { code: 'en', name: 'English' },
@@ -307,29 +308,7 @@ export default function VideoChat() {
   return (
     <div className="modern-video-chat-page">
       {/* Header */}
-      <header className="modern-chat-header">
-        <div className="header-left">
-          <Link href="/" className="logo-link">
-            <div className="logo-icon">
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <circle cx="12" cy="12" r="10" fill="#FFA500"/>
-                <path d="M8 10h8M8 14h6" stroke="white" strokeWidth="2" strokeLinecap="round"/>
-              </svg>
-            </div>
-            <h2 className="header-title">Assistant Hub</h2>
-          </Link>
-          <nav className="header-nav">
-            <Link href="/" className="nav-link">Home</Link>
-            <Link href="/chat" className="nav-link">Chat</Link>
-            <Link href="/document-chat" className="nav-link">Document Chat</Link>
-            <Link href="/voice-chat" className="nav-link">Voice Chat</Link>
-            <Link href="/video-chat" className="nav-link">Video Chat</Link>
-            <Link href="/faq" className="nav-link">FAQ</Link>
-            <Link href="/company-review" className="nav-link">Company Review</Link>
-            <Link href="/reviews" className="nav-link">Reviews</Link>
-          </nav>
-        </div>
-      </header>
+      <Navigation />
 
       {/* Main Content */}
       <div className="video-chat-container">
