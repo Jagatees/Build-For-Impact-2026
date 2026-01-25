@@ -7,7 +7,8 @@ const nextConfig = {
       config.externals = config.externals || []
       config.externals.push({
         'pdf-parse': 'commonjs pdf-parse',
-        'pdfjs-dist': 'commonjs pdfjs-dist'
+        'pdfjs-dist': 'commonjs pdfjs-dist',
+        'react-pdf': 'commonjs react-pdf'
       })
       
       // Ignore worker files for server-side builds
@@ -16,6 +17,14 @@ const nextConfig = {
       config.resolve.alias['pdfjs-dist/build/pdf.worker.js'] = false
       config.resolve.alias['./pdf.worker.mjs'] = false
       config.resolve.alias['./pdf.worker.js'] = false
+    } else {
+      // Client-side: resolve canvas and other browser-only modules
+      config.resolve.fallback = {
+        ...config.resolve.fallback,
+        canvas: false,
+        fs: false,
+        path: false,
+      }
     }
     return config
   },
