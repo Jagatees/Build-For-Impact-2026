@@ -9,8 +9,8 @@ export default function FAQ() {
 
   const faqs = [
     {
-      question: 'What is Build For Impact?',
-      answer: 'Build For Impact is a platform that supports migrant workers in Singapore. It provides information, resources, and assistance to help migrant workers navigate employment, legal, housing, and healthcare matters. The platform aims to make support services more accessible and help workers understand their rights and find help when needed.'
+      question: 'What is AbangSG?',
+      answer: 'AbangSG is a platform that supports migrant workers in Singapore. It provides information, resources, and assistance to help migrant workers navigate employment, legal, housing, and healthcare matters. The platform aims to make support services more accessible and help workers understand their rights and find help when needed.'
     },
     {
       question: 'How do I use the chat feature?',

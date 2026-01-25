@@ -58,6 +58,125 @@ export default function VideoChat() {
     })
   }
 
+  // Format text with markdown-style formatting
+  const formatText = (text) => {
+    if (!text) return ''
+    
+    // Split by lines to handle lists and paragraphs
+    const lines = text.split('\n')
+    
+    return lines.map((line, lineIndex) => {
+      const trimmedLine = line.trim()
+      
+      // Check if it's a numbered list (starts with number and period)
+      if (/^\d+\.\s/.test(trimmedLine)) {
+        const numberMatch = trimmedLine.match(/^(\d+)\.\s/)
+        const number = numberMatch ? numberMatch[1] : ''
+        const content = trimmedLine.replace(/^\d+\.\s/, '')
+        return (
+          <div key={lineIndex} style={{ marginBottom: '0.75rem', paddingLeft: '1.5rem', display: 'flex' }}>
+            <span style={{ fontWeight: 'bold', marginRight: '0.5rem', minWidth: '1.5rem' }}>
+              {number}.
+            </span>
+            <span style={{ flex: 1 }}>
+              {formatInlineText(content)}
+            </span>
+          </div>
+        )
+      }
+      
+      // Check if it's a bullet point (starts with * or -)
+      if (/^[\*\-]\s/.test(trimmedLine)) {
+        const content = trimmedLine.replace(/^[\*\-]\s/, '')
+        return (
+          <div key={lineIndex} style={{ marginBottom: '0.75rem', paddingLeft: '1.5rem', display: 'flex' }}>
+            <span style={{ marginRight: '0.5rem', minWidth: '1rem' }}>•</span>
+            <span style={{ flex: 1 }}>
+              {formatInlineText(content)}
+            </span>
+          </div>
+        )
+      }
+      
+      // Regular paragraph
+      if (trimmedLine) {
+        return (
+          <div key={lineIndex} style={{ marginBottom: '0.75rem' }}>
+            {formatInlineText(trimmedLine)}
+          </div>
+        )
+      }
+      
+      // Empty line
+      return <div key={lineIndex} style={{ marginBottom: '0.5rem' }}></div>
+    })
+  }
+
+  // Format inline text with bold and italic
+  const formatInlineText = (text) => {
+    if (!text) return ''
+    
+    const parts = []
+    let key = 0
+    let i = 0
+    
+    while (i < text.length) {
+      // Check for **bold** first (has priority)
+      if (i < text.length - 1 && text[i] === '*' && text[i + 1] === '*') {
+        const endIndex = text.indexOf('**', i + 2)
+        if (endIndex !== -1) {
+          // Add text before bold
+          if (i > 0) {
+            parts.push(<span key={key++}>{text.substring(0, i)}</span>)
+          }
+          // Add bold text
+          const boldText = text.substring(i + 2, endIndex)
+          parts.push(
+            <strong key={key++} style={{ fontWeight: '700', color: '#1E293B' }}>
+              {boldText}
+            </strong>
+          )
+          // Continue after the closing **
+          text = text.substring(endIndex + 2)
+          i = 0
+          continue
+        }
+      }
+      
+      // Check for *italic* (but not **)
+      if (text[i] === '*' && (i === text.length - 1 || text[i + 1] !== '*')) {
+        const endIndex = text.indexOf('*', i + 1)
+        // Make sure it's not part of **
+        if (endIndex !== -1 && (endIndex === text.length - 1 || text[endIndex + 1] !== '*')) {
+          // Add text before italic
+          if (i > 0) {
+            parts.push(<span key={key++}>{text.substring(0, i)}</span>)
+          }
+          // Add italic text
+          const italicText = text.substring(i + 1, endIndex)
+          parts.push(
+            <em key={key++} style={{ fontStyle: 'italic', color: '#475569' }}>
+              {italicText}
+            </em>
+          )
+          // Continue after the closing *
+          text = text.substring(endIndex + 1)
+          i = 0
+          continue
+        }
+      }
+      
+      i++
+    }
+    
+    // Add any remaining text
+    if (text.length > 0) {
+      parts.push(<span key={key++}>{text}</span>)
+    }
+    
+    return parts.length > 0 ? parts : <span>{text}</span>
+  }
+
   const handleSend = async (e) => {
     e?.preventDefault()
     const isSuggestionClick = e?.target?.dataset?.prompt
@@ -314,7 +433,7 @@ export default function VideoChat() {
       <div className="video-chat-container">
         {/* Large Video Player Area - Always visible */}
         <div className="main-video-section">
-          <h2 className="video-header-text">Here is a video explaining exactly what you need!</h2>
+          <h2 className="video-header-text">Watch a Visual Guide - Sometimes Seeing is Better Than Reading</h2>
           <div className="main-video-wrapper">
             {currentVideo ? (
               <div className="main-video-player">
@@ -388,7 +507,7 @@ export default function VideoChat() {
                   if (message.type === 'bot' && message.text && !message.videoUrl) {
                     return (
                       <div key={message.id} className="bot-response-text">
-                        {message.text}
+                        {formatText(message.text)}
                       </div>
                     )
                   }

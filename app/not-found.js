@@ -5,7 +5,7 @@ export default function NotFound() {
     <div>
       <nav className="nav">
         <div className="nav-content">
-          <h2>Build For Impact</h2>
+          <h2>AbangSG</h2>
           <ul className="nav-links">
             <li><Link href="/">Home</Link></li>
             <li><Link href="/abangchat">Chat</Link></li>

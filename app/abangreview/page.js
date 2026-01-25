@@ -4,6 +4,17 @@ import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import Navigation from '@/components/Navigation'
 
+const languages = [
+  { code: 'en', name: 'English' },
+  { code: 'ta', name: 'Tamil' },
+  { code: 'ms', name: 'Malay' },
+  { code: 'zh', name: 'Mandarin' },
+  { code: 'hi', name: 'Hindi' },
+  { code: 'bn', name: 'Bengali' },
+  { code: 'th', name: 'Thai' },
+  { code: 'id', name: 'Indonesian' }
+]
+
 const questions = [
   {
     id: 'question1',
@@ -17,6 +28,37 @@ const questions = [
   }
 ]
 
+// Original English text content
+const originalTexts = {
+  pageTitle: 'Company Reviews',
+  pageDescription: 'View companies and their position scores. Click on a company to see details and add your own answers. Your answers will update the overall position score.',
+  searchPlaceholder: 'Search by company name...',
+  sortBy: 'Sort by:',
+  positionScore: 'Position Score',
+  mostRecent: 'Most Recent',
+  companyName: 'Company Name',
+  noCompaniesFound: 'No companies found matching your search.',
+  noReviewsYet: 'No reviews yet.',
+  submitFirstReview: 'Submit the First Review',
+  reviews: 'reviews',
+  review: 'review',
+  overallPositionScore: 'Overall Position Score:',
+  basedOn: 'Based on',
+  thisScoreRepresents: 'This score represents the percentage of positive answers across all reviews.',
+  previousReviews: 'Previous Reviews',
+  reviewNumber: 'Review #',
+  addYourReview: 'Add Your Review',
+  answerBasedOn: 'Answer these questions based on your experience with',
+  yourAnswersWillBeAdded: 'Your answers will be added to the overall position score.',
+  yes: 'Yes',
+  no: 'No',
+  submitting: 'Submitting...',
+  submitYourAnswers: 'Submit Your Answers',
+  pleaseAnswerBoth: 'Please answer both questions',
+  answersSubmitted: 'Your answers have been submitted! The position score has been updated.',
+  failedToSubmit: 'Failed to submit answers. Please try again.'
+}
+
 export default function ReviewsPage() {
   const [reviews, setReviews] = useState([])
   const [searchTerm, setSearchTerm] = useState('')
@@ -24,6 +66,118 @@ export default function ReviewsPage() {
   const [expandedCompany, setExpandedCompany] = useState(null)
   const [userAnswers, setUserAnswers] = useState({})
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [selectedLanguage, setSelectedLanguage] = useState('en')
+  const [translatedTexts, setTranslatedTexts] = useState(originalTexts)
+  const [isTranslating, setIsTranslating] = useState(false)
+  const [translatedQuestions, setTranslatedQuestions] = useState(questions)
+
+  // Translation function using Sea Lion API
+  const translateText = async (text, targetLang) => {
+    if (targetLang === 'en' || !text) return text
+
+    try {
+      const response = await fetch('/api/chat', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          message: `Translate the following text to ${languages.find(l => l.code === targetLang)?.name || 'the selected language'}. Only return the translation, nothing else:\n\n${text}`,
+          language: targetLang,
+          conversationHistory: []
+        })
+      })
+
+      const data = await response.json()
+      return data.message || text
+    } catch (error) {
+      console.error('Translation error:', error)
+      return text
+    }
+  }
+
+  // Translate all texts when language changes
+  useEffect(() => {
+    const translateAllTexts = async () => {
+      if (selectedLanguage === 'en') {
+        setTranslatedTexts(originalTexts)
+        setTranslatedQuestions(questions)
+        return
+      }
+
+      setIsTranslating(true)
+      try {
+        // Translate all text keys
+        const translated = {}
+        for (const [key, value] of Object.entries(originalTexts)) {
+          translated[key] = await translateText(value, selectedLanguage)
+        }
+        setTranslatedTexts(translated)
+
+        // Translate questions
+        const translatedQ = await Promise.all(
+          questions.map(async (q) => ({
+            ...q,
+            text: await translateText(q.text, selectedLanguage)
+          }))
+        )
+        setTranslatedQuestions(translatedQ)
+      } catch (error) {
+        console.error('Error translating texts:', error)
+      } finally {
+        setIsTranslating(false)
+      }
+    }
+
+    translateAllTexts()
+  }, [selectedLanguage])
+
+  // Translate review questions from stored reviews
+  const translateReviewQuestion = async (questionText) => {
+    if (selectedLanguage === 'en' || !questionText) return questionText
+    try {
+      return await translateText(questionText, selectedLanguage)
+    } catch (error) {
+      return questionText
+    }
+  }
+
+  // Memoize translated reviews to avoid re-translating on every render
+  const [translatedReviews, setTranslatedReviews] = useState([])
+  
+  useEffect(() => {
+    const translateStoredReviews = async () => {
+      if (selectedLanguage === 'en') {
+        setTranslatedReviews(reviews)
+        return
+      }
+
+      if (reviews.length === 0) return
+
+      setIsTranslating(true)
+      try {
+        const translated = await Promise.all(
+          reviews.map(async (review) => ({
+            ...review,
+            questions: await Promise.all(
+              review.questions.map(async (q) => ({
+                ...q,
+                text: await translateReviewQuestion(q.text)
+              }))
+            )
+          }))
+        )
+        setTranslatedReviews(translated)
+      } catch (error) {
+        console.error('Error translating reviews:', error)
+        setTranslatedReviews(reviews)
+      } finally {
+        setIsTranslating(false)
+      }
+    }
+
+    translateStoredReviews()
+  }, [selectedLanguage, reviews])
 
   useEffect(() => {
     // Load reviews from API
@@ -41,8 +195,9 @@ export default function ReviewsPage() {
     fetchReviews()
   }, [])
 
-  // Group reviews by company name
-  const groupedByCompany = reviews.reduce((acc, review) => {
+  // Group reviews by company name (use translated reviews if available)
+  const reviewsToUse = translatedReviews.length > 0 ? translatedReviews : reviews
+  const groupedByCompany = reviewsToUse.reduce((acc, review) => {
     const companyName = review.companyName
     if (!acc[companyName]) {
       acc[companyName] = []
@@ -85,7 +240,7 @@ export default function ReviewsPage() {
 
   const handleSubmitAnswers = async (companyName) => {
     if (!userAnswers.question1 || !userAnswers.question2) {
-      alert('Please answer both questions')
+      alert(translatedTexts.pleaseAnswerBoth)
       return
     }
 
@@ -107,7 +262,7 @@ export default function ReviewsPage() {
       const data = await response.json()
 
       if (!response.ok) {
-        throw new Error(data.error || 'Failed to submit answers')
+        throw new Error(data.error || translatedTexts.failedToSubmit)
       }
 
       // Refresh reviews
@@ -119,10 +274,10 @@ export default function ReviewsPage() {
 
       // Reset form
       setUserAnswers({})
-      alert('Your answers have been submitted! The position score has been updated.')
+      alert(translatedTexts.answersSubmitted)
     } catch (error) {
       console.error('Error submitting answers:', error)
-      alert('Failed to submit answers. Please try again.')
+      alert(translatedTexts.failedToSubmit)
     } finally {
       setIsSubmitting(false)
     }
@@ -168,12 +323,40 @@ export default function ReviewsPage() {
       <Navigation />
 
       <div className="container">
+        {/* Language Selector at the top */}
+        <div className="card" style={{ marginBottom: '1rem' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+              <label htmlFor="language-select-reviews" className="language-label" style={{ fontWeight: 500, color: '#333' }}>
+                Language:
+              </label>
+              <select
+                id="language-select-reviews"
+                value={selectedLanguage}
+                onChange={(e) => setSelectedLanguage(e.target.value)}
+                className="language-dropdown"
+                disabled={isTranslating}
+                style={{ 
+                  background: isTranslating ? '#f5f5f5' : 'white',
+                  color: isTranslating ? '#999' : '#333'
+                }}
+              >
+                {languages.map(lang => (
+                  <option key={lang.code} value={lang.code}>
+                    {lang.name}
+                  </option>
+                ))}
+              </select>
+              {isTranslating && (
+              <span style={{ color: '#FFA500', fontSize: '0.9rem' }}>Translating...</span>
+            )}
+            </div>
+          </div>
+        </div>
+
         <div className="card">
-          <h1>Company Reviews</h1>
-          <p>
-            View companies and their position scores. Click on a company to see details and 
-            add your own answers. Your answers will update the overall position score.
-          </p>
+          <h1>{translatedTexts.pageTitle}</h1>
+          <p>{translatedTexts.pageDescription}</p>
         </div>
 
         <div className="card">
@@ -181,7 +364,7 @@ export default function ReviewsPage() {
             <div className="search-box">
               <input
                 type="text"
-                placeholder="Search by company name..."
+                placeholder={translatedTexts.searchPlaceholder}
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="form-input"
@@ -190,7 +373,7 @@ export default function ReviewsPage() {
             </div>
             <div className="sort-box">
               <label htmlFor="sort-select" style={{ marginRight: '0.5rem', fontWeight: 500 }}>
-                Sort by:
+                {translatedTexts.sortBy}
               </label>
               <select
                 id="sort-select"
@@ -199,9 +382,9 @@ export default function ReviewsPage() {
                 className="form-input"
                 style={{ width: 'auto' }}
               >
-                <option value="score">Position Score</option>
-                <option value="recent">Most Recent</option>
-                <option value="name">Company Name</option>
+                <option value="score">{translatedTexts.positionScore}</option>
+                <option value="recent">{translatedTexts.mostRecent}</option>
+                <option value="name">{translatedTexts.companyName}</option>
               </select>
             </div>
           </div>
@@ -211,10 +394,10 @@ export default function ReviewsPage() {
           <div className="card">
             <div style={{ textAlign: 'center', padding: '3rem' }}>
               <p style={{ fontSize: '1.2rem', color: '#666', marginBottom: '1rem' }}>
-                {searchTerm ? 'No companies found matching your search.' : 'No reviews yet.'}
+                {searchTerm ? translatedTexts.noCompaniesFound : translatedTexts.noReviewsYet}
               </p>
               <Link href="/company-review">
-                <button className="btn">Submit the First Review</button>
+                <button className="btn">{translatedTexts.submitFirstReview}</button>
               </Link>
             </div>
           </div>
@@ -233,13 +416,13 @@ export default function ReviewsPage() {
                   <div className="company-header-content">
                     <h2 className="company-name">{company.name}</h2>
                     <p className="company-meta">
-                      {reviewCount} {reviewCount === 1 ? 'review' : 'reviews'}
+                      {reviewCount} {reviewCount === 1 ? translatedTexts.review : translatedTexts.reviews}
                     </p>
                   </div>
                   <div className="company-header-right">
                     {company.score !== null && (
                       <div className={`position-score-badge score-${company.score >= 70 ? 'high' : company.score >= 40 ? 'medium' : 'low'}`}>
-                        <div className="score-label-small">Position Score</div>
+                        <div className="score-label-small">{translatedTexts.positionScore}</div>
                         <div className="score-value-small">{company.score}%</div>
                       </div>
                     )}
@@ -252,19 +435,19 @@ export default function ReviewsPage() {
                 {isExpanded && (
                   <div className="company-details">
                     <div className="company-overview">
-                      <h3>Overall Position Score: {company.score !== null ? `${company.score}%` : 'N/A'}</h3>
+                      <h3>{translatedTexts.overallPositionScore} {company.score !== null ? `${company.score}%` : 'N/A'}</h3>
                       <p className="score-explanation">
-                        Based on {company.reviews.length} {company.reviews.length === 1 ? 'review' : 'reviews'}. 
-                        This score represents the percentage of positive answers across all reviews.
+                        {translatedTexts.basedOn} {company.reviews.length} {company.reviews.length === 1 ? translatedTexts.review : translatedTexts.reviews}. 
+                        {translatedTexts.thisScoreRepresents}
                       </p>
                     </div>
 
                     <div className="previous-reviews">
-                      <h3>Previous Reviews</h3>
+                      <h3>{translatedTexts.previousReviews}</h3>
                       {company.reviews.map((review, index) => (
                         <div key={review.id} className="previous-review-item">
                           <div className="review-meta">
-                            <span className="review-number">Review #{index + 1}</span>
+                            <span className="review-number">{translatedTexts.reviewNumber}{index + 1}</span>
                             <span className="review-date">
                               {new Date(review.timestamp).toLocaleDateString('en-US', {
                                 year: 'numeric',
@@ -278,7 +461,7 @@ export default function ReviewsPage() {
                               <div key={question.id} className="review-answer-item">
                                 <span className="question-label">{qIndex + 1}. {question.text}</span>
                                 <span className={`answer-badge-small answer-${question.answer}`}>
-                                  {question.answer === 'yes' ? '✓ Yes' : '✗ No'}
+                                  {question.answer === 'yes' ? `✓ ${translatedTexts.yes}` : `✗ ${translatedTexts.no}`}
                                 </span>
                               </div>
                             ))}
@@ -288,13 +471,13 @@ export default function ReviewsPage() {
                     </div>
 
                     <div className="add-review-section">
-                      <h3>Add Your Review</h3>
+                      <h3>{translatedTexts.addYourReview}</h3>
                       <p className="section-description">
-                        Answer these questions based on your experience with {company.name}. 
-                        Your answers will be added to the overall position score.
+                        {translatedTexts.answerBasedOn} {company.name}. 
+                        {translatedTexts.yourAnswersWillBeAdded}
                       </p>
                       <div className="review-form-inline">
-                        {questions.map((question, index) => (
+                        {translatedQuestions.map((question, index) => (
                           <div key={question.id} className="question-group-inline">
                             <label className="question-label-inline">
                               {index + 1}. {question.text} <span className="required">*</span>
@@ -310,7 +493,7 @@ export default function ReviewsPage() {
                                   disabled={isSubmitting}
                                   required
                                 />
-                                <span>Yes</span>
+                                <span>{translatedTexts.yes}</span>
                               </label>
                               <label className="radio-label">
                                 <input
@@ -322,7 +505,7 @@ export default function ReviewsPage() {
                                   disabled={isSubmitting}
                                   required
                                 />
-                                <span>No</span>
+                                <span>{translatedTexts.no}</span>
                               </label>
                             </div>
                           </div>
@@ -333,7 +516,7 @@ export default function ReviewsPage() {
                           disabled={isSubmitting || !userAnswers.question1 || !userAnswers.question2}
                           style={{ marginTop: '1rem' }}
                         >
-                          {isSubmitting ? 'Submitting...' : 'Submit Your Answers'}
+                          {isSubmitting ? translatedTexts.submitting : translatedTexts.submitYourAnswers}
                         </button>
                       </div>
                     </div>

@@ -2285,11 +2285,20 @@ select.form-input {
   padding: 1.25rem 1.75rem;
   border-radius: 18px;
   font-size: 0.95rem;
-  line-height: 1.6;
+  line-height: 1.8;
   border: 1px solid #E0E0E0;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
-  white-space: pre-wrap;
   word-wrap: break-word;
+}
+
+.bot-response-text strong {
+  font-weight: 700;
+  color: #1E293B;
+}
+
+.bot-response-text em {
+  font-style: italic;
+  color: #475569;
 }
 
 .video-messages-section {

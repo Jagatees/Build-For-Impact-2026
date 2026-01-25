@@ -26,15 +26,12 @@ export default function Home() {
             <Link href="/abangchat" className="btn-primary">
               Chat with AbangSG
             </Link>
-            <Link href="/abangvoice" className="btn-secondary">
-              Try Voice Mode 🎤
-            </Link>
           </div>
           
           <div className="hero-stats">
             <div className="stat">
-              <span className="stat-num">10k+</span>
-              <span className="stat-label">Workers Helped</span>
+              <span className="stat-num">50k+</span>
+              <span className="stat-label">Questions Answered</span>
             </div>
             <div className="stat-divider"></div>
             <div className="stat">
