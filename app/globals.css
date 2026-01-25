@@ -20,17 +20,17 @@ body {
 }
 
 body {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(180deg, #FFE4B5 0%, #FFEDD5 50%, #FFFFFF 100%);
   min-height: 100vh;
   color: #333;
 }
 
 /* CSS Variables for consistent theming */
 :root {
-  --primary: #2563EB;
-  --primary-dark: #1E40AF;
+  --primary: #FFA500; /* Vibrant Orange */
+  --primary-dark: #FF8C00;
   --accent: #F97316;
-  --bg-soft: #F8FAFC;
+  --bg-soft: #FFF7ED; /* Light Cream Orange */
   --text-main: #1E293B;
   --text-muted: #64748B;
 }
@@ -44,6 +44,7 @@ a {
   max-width: 1200px;
   margin: 0 auto;
   padding: 2rem;
+  min-height: calc(100vh - 80px);
 }
 
 /* Navigation Styles - Used across all pages */
@@ -116,7 +117,7 @@ a {
 
 .nav-item:hover,
 .nav-item.active {
-  color: #2563EB;
+  color: #FFA500;
 }
 
 .nav-cta {
@@ -183,7 +184,7 @@ a {
 }
 
 .nav-links a:hover {
-  color: #667eea;
+  color: #FFA500;
 }
 
 .card {
@@ -195,7 +196,7 @@ a {
 }
 
 .card h1 {
-  color: #667eea;
+  color: #FFA500;
   margin-bottom: 1rem;
   font-size: 2.5rem;
 }
@@ -209,7 +210,7 @@ a {
 .btn {
   display: inline-block;
   padding: 0.75rem 2rem;
-  background: #667eea;
+  background: #FFA500;
   color: white;
   border-radius: 8px;
   font-weight: 500;
@@ -221,7 +222,7 @@ a {
 }
 
 .btn:hover:not(:disabled) {
-  background: #5568d3;
+  background: #FF8C00;
   transform: translateY(-2px);
 }
 
@@ -238,7 +239,7 @@ a {
   align-items: flex-start;
   min-height: calc(100vh - 80px);
   padding: 2rem 1rem;
-  background: #f5f7fa;
+  background: linear-gradient(180deg, #FFE4B5 0%, #FFEDD5 50%, #FFFFFF 100%);
 }
 
 .chat-wrapper {
@@ -297,8 +298,8 @@ a {
   border: 2px solid #e0e0e0;
   border-radius: 8px;
   font-size: 0.9rem;
-  background: white;
-  color: #333;
+  background: white !important;
+  color: #333 !important;
   cursor: pointer;
   outline: none;
   transition: all 0.3s;
@@ -306,18 +307,19 @@ a {
 }
 
 .language-dropdown:hover:not(:disabled) {
-  border-color: #667eea;
+  border-color: #FFA500;
 }
 
 .language-dropdown:focus {
-  border-color: #667eea;
-  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+  border-color: #FFA500;
+  box-shadow: 0 0 0 3px rgba(255, 165, 0, 0.1);
 }
 
 .language-dropdown:disabled {
-  opacity: 0.6;
+  opacity: 0.7;
   cursor: not-allowed;
-  background: #f5f5f5;
+  background: #f5f5f5 !important;
+  color: #666 !important;
 }
 
 .chat-messages-container {
@@ -351,6 +353,37 @@ a {
   align-self: flex-start;
 }
 
+.bot-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: #FFA500;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  overflow: hidden;
+  border: 2px solid #FF8C00;
+}
+
+.bot-avatar-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 50%;
+}
+
+.bot-avatar-fallback {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  background: #FFA500;
+  border-radius: 50%;
+}
+
 .message-content {
   padding: 0.875rem 1.125rem;
   border-radius: 18px;
@@ -360,7 +393,7 @@ a {
 }
 
 .message-bubble.user .message-content {
-  background: #667eea;
+  background: #FFA500;
   color: white;
   border-bottom-right-radius: 4px;
 }
@@ -391,7 +424,7 @@ a {
 }
 
 .copy-button:hover {
-  color: #667eea;
+  color: #FFA500;
   transform: scale(1.1);
 }
 
@@ -420,9 +453,9 @@ a {
 }
 
 .chat-input-field:focus {
-  border-color: #667eea;
+  border-color: #FFA500;
   background-color: white;
-  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+  box-shadow: 0 0 0 3px rgba(255, 165, 0, 0.1);
 }
 
 .chat-input-field::placeholder {
@@ -433,7 +466,7 @@ a {
   width: 44px;
   height: 44px;
   border-radius: 50%;
-  background: #667eea;
+  background: #FFA500;
   color: white;
   border: none;
   cursor: pointer;
@@ -446,7 +479,7 @@ a {
 }
 
 .send-button:hover:not(:disabled) {
-  background: #5568d3;
+  background: #FF8C00;
   transform: scale(1.05);
 }
 
@@ -550,7 +583,7 @@ a {
 
 .faq-icon {
   font-size: 1.5rem;
-  color: #667eea;
+  color: #FFA500;
   font-weight: bold;
   transition: transform 0.3s;
 }
@@ -596,16 +629,16 @@ a {
   align-items: center;
   justify-content: center;
   padding: 3rem 2rem;
-  border: 3px dashed #667eea;
+  border: 3px dashed #FFA500;
   border-radius: 12px;
   cursor: pointer;
   transition: all 0.3s;
-  background: #f8f9ff;
+  background: #FFF7ED;
 }
 
 .upload-label:hover {
-  background: #f0f2ff;
-  border-color: #5568d3;
+  background: #FFEDD5;
+  border-color: #FF8C00;
 }
 
 .upload-icon {
@@ -658,7 +691,7 @@ a {
 }
 
 .analysis-result h2 {
-  color: #667eea;
+  color: #FFA500;
   margin-bottom: 1rem;
   font-size: 1.8rem;
 }
@@ -685,7 +718,7 @@ a {
 .loading-indicator {
   text-align: center;
   padding: 2rem;
-  color: #667eea;
+  color: #FFA500;
   font-weight: 500;
 }
 
@@ -723,7 +756,7 @@ a {
 }
 
 .form-input:focus {
-  border-color: #667eea;
+  border-color: #FFA500;
 }
 
 .form-input:disabled {
@@ -735,10 +768,11 @@ select.form-input {
   cursor: pointer;
   padding-right: 2.5rem;
   appearance: none;
+  background-color: white !important;
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23333' d='M6 9L1 4h10z'/%3E%3C/svg%3E");
   background-repeat: no-repeat;
   background-position: right 0.75rem center;
-  padding-right: 2.5rem;
+  color: #333 !important;
 }
 
 .form-hint {
@@ -807,7 +841,7 @@ select.form-input {
   width: 20px;
   height: 20px;
   cursor: pointer;
-  accent-color: #667eea;
+  accent-color: #FFA500;
 }
 
 .radio-label input[type="radio"]:disabled {
@@ -956,7 +990,7 @@ select.form-input {
   padding: 1.5rem;
   background: #f8f9fa;
   border-radius: 8px;
-  border-left: 4px solid #667eea;
+  border-left: 4px solid #FFA500;
 }
 
 .question-header {
@@ -967,7 +1001,7 @@ select.form-input {
 
 .question-number {
   font-weight: bold;
-  color: #667eea;
+  color: #FFA500;
 }
 
 .question-text {
@@ -1034,8 +1068,8 @@ select.form-input {
 }
 
 .vote-btn:hover {
-  border-color: #667eea;
-  background: #f0f2ff;
+  border-color: #FFA500;
+  background: #FFF7ED;
 }
 
 .vote-btn.active.helpful {
@@ -1138,7 +1172,7 @@ select.form-input {
 
 .expand-icon {
   font-size: 1.2rem;
-  color: #667eea;
+  color: #FFA500;
   font-weight: bold;
   user-select: none;
 }
@@ -1182,7 +1216,7 @@ select.form-input {
   padding: 1rem;
   border-radius: 8px;
   margin-bottom: 1rem;
-  border-left: 3px solid #667eea;
+  border-left: 3px solid #FFA500;
 }
 
 .review-meta {
@@ -1195,7 +1229,7 @@ select.form-input {
 
 .review-number {
   font-weight: 600;
-  color: #667eea;
+  color: #FFA500;
 }
 
 .review-date {
@@ -1234,7 +1268,7 @@ select.form-input {
   background: white;
   padding: 1.5rem;
   border-radius: 8px;
-  border: 2px dashed #667eea;
+  border: 2px dashed #FFA500;
 }
 
 .add-review-section h3 {
@@ -1277,7 +1311,7 @@ select.form-input {
 }
 
 .hero-section {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #FFA500 0%, #FF8C00 100%);
   padding: 8rem 2rem 6rem;
   text-align: center;
   color: white;
@@ -1377,7 +1411,7 @@ select.form-input {
 .stat-number {
   font-size: 3.5rem;
   font-weight: 700;
-  color: #667eea;
+  color: #FFA500;
   margin-bottom: 0.5rem;
 }
 
@@ -1469,10 +1503,10 @@ select.form-input {
 /* Example Prompts Section */
 .example-prompts-section {
   padding: 1.5rem;
-  background: #f0f4ff;
+  background: #FFF7ED;
   border-radius: 12px;
   margin-bottom: 1rem;
-  border: 2px dashed #667eea;
+  border: 2px dashed #FFA500;
 }
 
 .example-prompts-title {
@@ -1491,9 +1525,9 @@ select.form-input {
 .example-prompt-btn {
   padding: 0.75rem 1rem;
   background: white;
-  border: 2px solid #667eea;
+  border: 2px solid #FFA500;
   border-radius: 8px;
-  color: #667eea;
+  color: #FFA500;
   font-size: 0.9rem;
   cursor: pointer;
   transition: all 0.3s;
@@ -1502,10 +1536,10 @@ select.form-input {
 }
 
 .example-prompt-btn:hover:not(:disabled) {
-  background: #667eea;
+  background: #FFA500;
   color: white;
   transform: translateY(-2px);
-  box-shadow: 0 4px 8px rgba(102, 126, 234, 0.3);
+  box-shadow: 0 4px 8px rgba(255, 165, 0, 0.3);
 }
 
 .example-prompt-btn:disabled {
@@ -1516,7 +1550,7 @@ select.form-input {
 /* Modern Chat Page Styles */
 .modern-chat-page {
   min-height: 100vh;
-  background: #F8F8F8;
+  background: linear-gradient(180deg, #FFE4B5 0%, #FFEDD5 50%, #FFFFFF 100%);
   display: flex;
   flex-direction: column;
 }
@@ -1609,8 +1643,8 @@ select.form-input {
   border: 1px solid #E0E0E0;
   border-radius: 8px;
   font-size: 0.875rem;
-  background: white;
-  color: #333;
+  background: white !important;
+  color: #333 !important;
   cursor: pointer;
   outline: none;
   transition: all 0.3s;
@@ -1762,8 +1796,8 @@ select.form-input {
   border: 1px solid #E0E0E0;
   border-radius: 16px;
   font-size: 1rem;
-  background: white;
-  color: #333;
+  background: white !important;
+  color: #333 !important;
   cursor: pointer;
   outline: none;
   transition: all 0.3s;
@@ -1861,6 +1895,37 @@ select.form-input {
 
 .modern-message.bot {
   align-self: flex-start;
+}
+
+.modern-message .bot-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: #FFA500;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  overflow: hidden;
+  border: 2px solid #FF8C00;
+}
+
+.modern-message .bot-avatar-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 50%;
+}
+
+.modern-message .bot-avatar-fallback {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  background: #FFA500;
+  border-radius: 50%;
 }
 
 .modern-message-content {
@@ -2020,7 +2085,7 @@ select.form-input {
 /* Video Chat Page Styles */
 .modern-video-chat-page {
   min-height: 100vh;
-  background: #F8F8F8;
+  background: linear-gradient(180deg, #FFE4B5 0%, #FFEDD5 50%, #FFFFFF 100%);
   display: flex;
   flex-direction: column;
 }
@@ -2136,8 +2201,8 @@ select.form-input {
 .spinner-ring {
   width: 50px;
   height: 50px;
-  border: 4px solid rgba(32, 178, 170, 0.3);
-  border-top-color: #20B2AA;
+  border: 4px solid rgba(255, 165, 0, 0.3);
+  border-top-color: #FFA500;
   border-radius: 50%;
   animation: spin 1s linear infinite;
 }
@@ -2185,7 +2250,7 @@ select.form-input {
 
 .response-toggle-button:hover {
   background: #f8f8f8;
-  border-color: #20B2AA;
+  border-color: #FFA500;
 }
 
 .response-toggle-button svg {
@@ -2334,7 +2399,7 @@ select.form-input {
 
 .progress-fill {
   height: 100%;
-  background: linear-gradient(90deg, #20B2AA 0%, #17a2b8 100%);
+  background: linear-gradient(90deg, #FFA500 0%, #FF8C00 100%);
   border-radius: 3px;
   transition: width 1s linear;
 }
@@ -2372,8 +2437,8 @@ select.form-input {
 }
 
 .video-input-field:focus {
-  border-color: #20B2AA;
-  box-shadow: 0 2px 12px rgba(32, 178, 170, 0.15);
+  border-color: #FFA500;
+  box-shadow: 0 2px 12px rgba(255, 165, 0, 0.15);
 }
 
 .video-input-field::placeholder {
@@ -2389,7 +2454,7 @@ select.form-input {
 
 .video-send-button {
   padding: 1rem 2rem;
-  background: #20B2AA;
+  background: #FFA500;
   color: white;
   border: none;
   border-radius: 24px;
@@ -2401,14 +2466,14 @@ select.form-input {
   justify-content: center;
   gap: 0.5rem;
   transition: all 0.3s;
-  box-shadow: 0 4px 12px rgba(32, 178, 170, 0.3);
+  box-shadow: 0 4px 12px rgba(255, 165, 0, 0.3);
   white-space: nowrap;
 }
 
 .video-send-button:hover:not(:disabled) {
-  background: #17a2b8;
+  background: #FF8C00;
   transform: translateY(-2px);
-  box-shadow: 0 6px 16px rgba(32, 178, 170, 0.4);
+  box-shadow: 0 6px 16px rgba(255, 165, 0, 0.4);
 }
 
 .video-send-button:disabled {
@@ -2454,10 +2519,10 @@ select.form-input {
 }
 
 .suggestion-prompt-card:hover:not(:disabled) {
-  border-color: #20B2AA;
-  background: #f0fffe;
+  border-color: #FFA500;
+  background: #FFF7ED;
   transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(32, 178, 170, 0.15);
+  box-shadow: 0 4px 12px rgba(255, 165, 0, 0.15);
 }
 
 .suggestion-prompt-card:disabled {

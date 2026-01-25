@@ -190,7 +190,7 @@ export default function CompanyReview() {
                 All submissions are anonymous and help build a safer work environment for everyone.
               </p>
               <div style={{ display: 'flex', gap: '1rem', marginTop: '1.5rem', justifyContent: 'center', flexWrap: 'wrap' }}>
-                <Link href="/reviews">
+                <Link href="/abangreview">
                   <button className="btn">View All Reviews</button>
                 </Link>
                 <button onClick={handleReset} className="btn btn-secondary">

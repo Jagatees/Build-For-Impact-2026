@@ -23,10 +23,10 @@ export default function Home() {
             We bridge the gap between you and the help you need.
           </p>
           <div className="hero-buttons">
-            <Link href="/chat" className="btn-primary">
+            <Link href="/abangchat" className="btn-primary">
               Chat with AbangSG
             </Link>
-            <Link href="/voice-chat" className="btn-secondary">
+            <Link href="/abangvoice" className="btn-secondary">
               Try Voice Mode 🎤
             </Link>
           </div>
@@ -70,7 +70,7 @@ export default function Home() {
               Instantly check if your contract terms are legal. Ask questions about salary, 
               hours, and safety in your native language.
             </p>
-            <Link href="/chat" className="card-link">Start Chat &rarr;</Link>
+            <Link href="/abangchat" className="card-link">Start Chat &rarr;</Link>
           </div>
 
           {/* Card 2 */}
@@ -81,7 +81,7 @@ export default function Home() {
               Don't like typing? Just speak. Our AI understands Tamil, Bengali, Mandarin, 
               Malay, and more.
             </p>
-            <Link href="/voice-chat" className="card-link">Use Voice &rarr;</Link>
+            <Link href="/abangvoice" className="card-link">Use Voice &rarr;</Link>
           </div>
 
           {/* Card 3 */}
@@ -92,7 +92,7 @@ export default function Home() {
               See what other workers say about an employer before you sign. 
               Share your own experience anonymously.
             </p>
-            <Link href="/reviews" className="card-link">Check Reviews &rarr;</Link>
+            <Link href="/abangreview" className="card-link">Check Reviews &rarr;</Link>
           </div>
         </div>
       </section>
@@ -102,7 +102,7 @@ export default function Home() {
         <div className="cta-container">
           <h2>Never Walk Alone</h2>
           <p>Join thousands of brothers and sisters using AbangSG today.</p>
-          <Link href="/chat" className="btn-white">Launch Assistant</Link>
+          <Link href="/abangchat" className="btn-white">Launch Assistant</Link>
         </div>
       </section>
 
@@ -117,14 +117,14 @@ export default function Home() {
       <style jsx global>{`
         /* RESET & BASICS */
         * { box-sizing: border-box; margin: 0; padding: 0; }
-        body { font-family: 'Inter', -apple-system, sans-serif; background: #fff; color: #1a202c; }
+        body { font-family: 'Inter', -apple-system, sans-serif; background: linear-gradient(180deg, #FFE4B5 0%, #FFEDD5 50%, #FFFFFF 100%); color: #1a202c; }
 
         /* VARIABLES */
         :root {
-          --primary: #2563EB; /* Trustworthy Blue */
-          --primary-dark: #1E40AF;
+          --primary: #FFA500; /* Vibrant Orange */
+          --primary-dark: #FF8C00;
           --accent: #F97316; /* Warm Orange */
-          --bg-soft: #F8FAFC;
+          --bg-soft: #FFF7ED; /* Light Cream Orange */
           --text-main: #1E293B;
           --text-muted: #64748B;
         }
@@ -164,7 +164,7 @@ export default function Home() {
 
         .btn-primary {
           background: var(--primary); color: white; padding: 1rem 2rem; border-radius: 50px;
-          text-decoration: none; font-weight: 600; box-shadow: 0 4px 14px rgba(37, 99, 235, 0.3);
+          text-decoration: none; font-weight: 600; box-shadow: 0 4px 14px rgba(255, 165, 0, 0.3);
           transition: transform 0.2s, background 0.2s;
         }
         .btn-primary:hover { background: var(--primary-dark); transform: translateY(-2px); }
@@ -186,12 +186,12 @@ export default function Home() {
         /* HERO SECTION */
         .hero {
           position: relative; padding: 6rem 2rem 4rem;
-          background: linear-gradient(180deg, #EFF6FF 0%, #fff 100%);
+          background: linear-gradient(180deg, #FFF7ED 0%, #fff 100%);
           text-align: center; overflow: hidden;
         }
         .hero-content { position: relative; z-index: 10; max-width: 800px; margin: 0 auto; }
         .hero-badge {
-          display: inline-block; background: #DBEAFE; color: var(--primary); 
+          display: inline-block; background: #FFEDD5; color: var(--primary); 
           padding: 0.25rem 0.75rem; border-radius: 20px; font-size: 0.85rem; font-weight: 600;
           margin-bottom: 1.5rem;
         }
@@ -219,8 +219,8 @@ export default function Home() {
         .hero-shape {
           position: absolute; border-radius: 50%; filter: blur(80px); opacity: 0.6; z-index: 0;
         }
-        .shape-1 { width: 400px; height: 400px; background: #DBEAFE; top: -100px; left: -100px; }
-        .shape-2 { width: 300px; height: 300px; background: #FFEDD5; bottom: 50px; right: -50px; }
+        .shape-1 { width: 400px; height: 400px; background: #FFEDD5; top: -100px; left: -100px; }
+        .shape-2 { width: 300px; height: 300px; background: #FFF4E6; bottom: 50px; right: -50px; }
 
         /* FEATURES SECTION */
         .features { padding: 5rem 2rem; background: #fff; }
@@ -243,9 +243,9 @@ export default function Home() {
           width: 50px; height: 50px; border-radius: 12px; display: flex; align-items: center; justify-content: center;
           font-size: 1.5rem; margin-bottom: 1.5rem;
         }
-        .icon-box.blue { background: #EFF6FF; }
-        .icon-box.orange { background: #FFF7ED; }
-        .icon-box.red { background: #FEF2F2; }
+        .icon-box.blue { background: #FFF7ED; }
+        .icon-box.orange { background: #FFEDD5; }
+        .icon-box.red { background: #FFE4D6; }
 
         .feature-card h3 { font-size: 1.25rem; font-weight: 700; margin-bottom: 1rem; color: var(--text-main); }
         .feature-card p { color: var(--text-muted); line-height: 1.6; margin-bottom: 1.5rem; }
