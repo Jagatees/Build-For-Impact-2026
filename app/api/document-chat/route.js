@@ -1,14 +1,6 @@
 export const runtime = "nodejs";
 
 import { NextResponse } from "next/server";
-import fs from "fs/promises";
-import path from "path";
-import os from "os";
-import { exec } from "child_process";
-import util from "util";
-import tesseract from "node-tesseract-ocr";
-
-const execAsync = util.promisify(exec);
 
 const SEA_LION_API_URL =
   process.env.SEA_LION_API_URL ||
@@ -41,8 +33,6 @@ function chunkText(text, chunkSize = 2500) {
 }
 
 export async function POST(req) {
-  let tempDir;
-
   try {
     const formData = await req.formData();
     const file = formData.get("file");
@@ -52,45 +42,39 @@ export async function POST(req) {
       return NextResponse.json({ error: "No file uploaded" }, { status: 400 });
     }
 
-    /* ---------- Setup temp workspace ---------- */
-    tempDir = await fs.mkdtemp(path.join(os.tmpdir(), "doc-ocr-"));
-    const pdfPath = path.join(tempDir, file.name);
-
-    await fs.writeFile(pdfPath, Buffer.from(await file.arrayBuffer()));
-
-    /* ---------- PDF → PNG ---------- */
-    const outputPrefix = path.join(tempDir, "page");
-    await execAsync(`pdftoppm -png "${pdfPath}" "${outputPrefix}"`);
-
-    /* ---------- OCR ---------- */
-    const files = await fs.readdir(tempDir);
-    const imageFiles = files
-      .filter(f => f.startsWith("page-") && f.endsWith(".png"))
-      .sort((a, b) => {
-        const na = parseInt(a.match(/page-(\d+)/)?.[1] || 0, 10);
-        const nb = parseInt(b.match(/page-(\d+)/)?.[1] || 0, 10);
-        return na - nb;
-      });
-
-    if (imageFiles.length === 0) {
-      throw new Error("PDF conversion produced no images");
-    }
-
-    let extractedText = "";
-
-    for (const img of imageFiles) {
-      const imgPath = path.join(tempDir, img);
-      const pageText = await tesseract.recognize(imgPath, {
-        lang: "eng+tam+hin+ben+msa+chi_sim",
-        oem: 1,
-        psm: 3,
-      });
-      extractedText += pageText + "\n\n";
-    }
-
-    if (!extractedText.trim()) {
+    // Check if it's a PDF file
+    if (file.type !== 'application/pdf' && !file.name?.endsWith('.pdf')) {
       return NextResponse.json(
-        { error: "No text detected in document" },
+        { error: 'File must be a PDF' },
+        { status: 400 }
+      )
+    }
+
+    /* ---------- Extract text from PDF using pdf-parse ---------- */
+    const arrayBuffer = await file.arrayBuffer();
+    const buffer = Buffer.from(arrayBuffer);
+
+    // Use require for server-side to avoid webpack bundling issues
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const pdfParseModule = require('pdf-parse');
+    
+    // Get the PDFParse class - it's exported as a property
+    const PDFParse = pdfParseModule.PDFParse || pdfParseModule.default;
+    
+    if (!PDFParse) {
+      throw new Error('PDFParse class not found. Available exports: ' + Object.keys(pdfParseModule).join(', '));
+    }
+    
+    // Instantiate PDFParse with buffer data
+    const parser = new PDFParse({ data: buffer });
+    
+    // Extract text from PDF using the getText() method
+    const result = await parser.getText();
+    const extractedText = result.text;
+
+    if (!extractedText || extractedText.trim().length === 0) {
+      return NextResponse.json(
+        { error: 'No text could be extracted from the PDF. The PDF might be image-based or empty.' },
         { status: 400 }
       );
     }
@@ -147,17 +131,10 @@ ${chunk}
     });
 
   } catch (err) {
-    console.error("DOCUMENT OCR PIPELINE ERROR:", err);
+    console.error("DOCUMENT PROCESSING ERROR:", err);
     return NextResponse.json(
       { error: err.message || "Translation failed" },
       { status: 500 }
     );
-  } finally {
-    /* ---------- Cleanup ---------- */
-    if (tempDir) {
-      try {
-        await fs.rm(tempDir, { recursive: true, force: true });
-      } catch {}
-    }
   }
 }

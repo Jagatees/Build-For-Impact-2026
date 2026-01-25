@@ -11,7 +11,7 @@ export default function ReviewPage() {
 
   useEffect(() => {
     const url = sessionStorage.getItem("pdfUrl");
-    const text = sessionStorage.getItem("originalText"); // English OCR text
+    const text = sessionStorage.getItem("originalText"); // Extracted PDF text
     const language = sessionStorage.getItem("language") || "en"; // ✅ READ LANGUAGE
 
     console.log("🌐 Review page language:", language);
