@@ -1,20 +1,12 @@
 export const runtime = "nodejs";
 
 import { NextResponse } from "next/server";
-import fs from "fs/promises";
-import path from "path";
-import os from "os";
-import { exec } from "child_process";
-import util from "util";
-import tesseract from "node-tesseract-ocr";
-
-const execAsync = util.promisify(exec);
 
 const SEA_LION_API_URL =
   process.env.SEA_LION_API_URL ||
   "https://cf-sealion01.jagateesvaran.workers.dev";
 
-/* ---------- Language map (IMPORTANT) ---------- */
+/* ---------- Language map ---------- */
 const LANGUAGE_MAP = {
   en: "English",
   zh: "Chinese (Simplified)",
@@ -41,8 +33,6 @@ function chunkText(text, chunkSize = 2500) {
 }
 
 export async function POST(req) {
-  let tempDir;
-
   try {
     const formData = await req.formData();
     const file = formData.get("file");
@@ -52,50 +42,35 @@ export async function POST(req) {
       return NextResponse.json({ error: "No file uploaded" }, { status: 400 });
     }
 
-    /* ---------- Setup temp workspace ---------- */
-    tempDir = await fs.mkdtemp(path.join(os.tmpdir(), "doc-ocr-"));
-    const pdfPath = path.join(tempDir, file.name);
+    /* ---------- Call PDF Extract API (NO direct integration) ---------- */
+    const extractForm = new FormData();
+    extractForm.append("pdf", file);
 
-    await fs.writeFile(pdfPath, Buffer.from(await file.arrayBuffer()));
+    const baseUrl =
+      process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
 
-    /* ---------- PDF → PNG ---------- */
-    const outputPrefix = path.join(tempDir, "page");
-    await execAsync(`pdftoppm -png "${pdfPath}" "${outputPrefix}"`);
+    const extractRes = await fetch(`${baseUrl}/api/pdf-extract`, {
+      method: "POST",
+      body: extractForm,
+    });
 
-    /* ---------- OCR ---------- */
-    const files = await fs.readdir(tempDir);
-    const imageFiles = files
-      .filter(f => f.startsWith("page-") && f.endsWith(".png"))
-      .sort((a, b) => {
-        const na = parseInt(a.match(/page-(\d+)/)?.[1] || 0, 10);
-        const nb = parseInt(b.match(/page-(\d+)/)?.[1] || 0, 10);
-        return na - nb;
-      });
-
-    if (imageFiles.length === 0) {
-      throw new Error("PDF conversion produced no images");
+    if (!extractRes.ok) {
+      const errText = await extractRes.text();
+      console.error("PDF extract error:", errText);
+      throw new Error("PDF extraction failed");
     }
 
-    let extractedText = "";
+    const extractData = await extractRes.json();
+    const extractedText = extractData.text;
 
-    for (const img of imageFiles) {
-      const imgPath = path.join(tempDir, img);
-      const pageText = await tesseract.recognize(imgPath, {
-        lang: "eng+tam+hin+ben+msa+chi_sim",
-        oem: 1,
-        psm: 3,
-      });
-      extractedText += pageText + "\n\n";
-    }
-
-    if (!extractedText.trim()) {
+    if (!extractedText || !extractedText.trim()) {
       return NextResponse.json(
-        { error: "No text detected in document" },
+        { error: "No text extracted from PDF" },
         { status: 400 }
       );
     }
 
-    /* ---------- Translation (CHUNKED) ---------- */
+    /* ---------- Translation (CHUNKED, unchanged) ---------- */
     const languageName =
       LANGUAGE_MAP[targetLanguage] || "English";
 
@@ -142,22 +117,15 @@ ${chunk}
 
     /* ---------- Return JSON ---------- */
     return NextResponse.json({
-      translatedText: finalTranslation,
       originalText: extractedText,
+      translatedText: finalTranslation,
     });
 
   } catch (err) {
-    console.error("DOCUMENT OCR PIPELINE ERROR:", err);
+    console.error("DOCUMENT CHAT ERROR:", err);
     return NextResponse.json(
       { error: err.message || "Translation failed" },
       { status: 500 }
     );
-  } finally {
-    /* ---------- Cleanup ---------- */
-    if (tempDir) {
-      try {
-        await fs.rm(tempDir, { recursive: true, force: true });
-      } catch {}
-    }
   }
 }
