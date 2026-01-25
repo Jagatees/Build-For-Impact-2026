@@ -3,7 +3,6 @@
 import { useState, useEffect, useRef } from 'react'
 import Link from 'next/link'
 import VideoGenerator from '@/components/VideoGenerator'
-import Navigation from '@/components/Navigation'
 
 const languages = [
   { code: 'en', name: 'English' },
@@ -58,18 +57,18 @@ export default function VideoChat() {
     })
   }
 
+  const handleSuggestionClick = (prompt) => {
+    // Just fill the input field, don't send yet
+    setInputValue(prompt)
+  }
+
   const handleSend = async (e) => {
     e?.preventDefault()
-    const isSuggestionClick = e?.target?.dataset?.prompt
-    const messageToSend = isSuggestionClick || inputValue.trim()
+    const messageToSend = inputValue.trim()
     if (!messageToSend || isLoading) return
 
     const userMessageText = messageToSend
-    if (!isSuggestionClick) {
-      setInputValue('')
-    } else {
-      setInputValue('') // Clear input even for suggestions
-    }
+    setInputValue('')
     setIsLoading(true)
 
     // Add user message
@@ -150,7 +149,7 @@ export default function VideoChat() {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({ 
-          prompt: llmResponse // LLM response IS the script that will be spoken in the video
+          prompt: llmResponse // Send only LLM response to video generation, no extra prompts
         })
       })
       .then(async (videoResponse) => {
@@ -308,7 +307,29 @@ export default function VideoChat() {
   return (
     <div className="modern-video-chat-page">
       {/* Header */}
-      <Navigation />
+      <header className="modern-chat-header">
+        <div className="header-left">
+          <Link href="/" className="logo-link">
+            <div className="logo-icon">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <circle cx="12" cy="12" r="10" fill="#FFA500"/>
+                <path d="M8 10h8M8 14h6" stroke="white" strokeWidth="2" strokeLinecap="round"/>
+              </svg>
+            </div>
+            <h2 className="header-title">Assistant Hub</h2>
+          </Link>
+          <nav className="header-nav">
+            <Link href="/" className="nav-link">Home</Link>
+            <Link href="/chat" className="nav-link">Chat</Link>
+            <Link href="/document-chat" className="nav-link">Document Chat</Link>
+            <Link href="/voice-chat" className="nav-link">Voice Chat</Link>
+            <Link href="/video-chat" className="nav-link">Video Chat</Link>
+            <Link href="/faq" className="nav-link">FAQ</Link>
+            <Link href="/company-review" className="nav-link">Company Review</Link>
+            <Link href="/reviews" className="nav-link">Reviews</Link>
+          </nav>
+        </div>
+      </header>
 
       {/* Main Content */}
       <div className="video-chat-container">
@@ -352,7 +373,7 @@ export default function VideoChat() {
                 ) : (
                   <div className="play-button-large">
                     <svg width="80" height="80" viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg">
-                      <circle cx="40" cy="40" r="40" fill="#FFA500"/>
+                      <circle cx="40" cy="40" r="40" fill="#20B2AA"/>
                       <path d="M32 24L32 56L56 40L32 24Z" fill="white"/>
                     </svg>
                   </div>
@@ -407,8 +428,7 @@ export default function VideoChat() {
                 <button
                   key={index}
                   className="suggestion-prompt-card"
-                  data-prompt={prompt}
-                  onClick={handleSend}
+                  onClick={() => handleSuggestionClick(prompt)}
                   disabled={isLoading}
                 >
                   {prompt}

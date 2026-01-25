@@ -177,18 +177,18 @@ export default function VideoChat() {
     return parts.length > 0 ? parts : <span>{text}</span>
   }
 
+  const handleSuggestionClick = (prompt) => {
+    // Just fill the input field, don't send yet
+    setInputValue(prompt)
+  }
+
   const handleSend = async (e) => {
     e?.preventDefault()
-    const isSuggestionClick = e?.target?.dataset?.prompt
-    const messageToSend = isSuggestionClick || inputValue.trim()
+    const messageToSend = inputValue.trim()
     if (!messageToSend || isLoading) return
 
     const userMessageText = messageToSend
-    if (!isSuggestionClick) {
-      setInputValue('')
-    } else {
-      setInputValue('') // Clear input even for suggestions
-    }
+    setInputValue('')
     setIsLoading(true)
 
     // Add user message
@@ -269,7 +269,7 @@ export default function VideoChat() {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({ 
-          prompt: llmResponse // LLM response IS the script that will be spoken in the video
+          prompt: llmResponse // Send only LLM response to video generation, no extra prompts
         })
       })
       .then(async (videoResponse) => {
@@ -442,6 +442,13 @@ export default function VideoChat() {
                   className="large-video"
                   src={currentVideo.videoUrl}
                   autoPlay
+                  onError={(e) => {
+                    console.error('Video playback error:', e)
+                    console.error('Video URL:', currentVideo.videoUrl)
+                    alert('Video failed to load. Please check the console for details.')
+                  }}
+                  onLoadStart={() => console.log('Video loading started:', currentVideo.videoUrl)}
+                  onCanPlay={() => console.log('Video can play:', currentVideo.videoUrl)}
                 >
                   Your browser does not support the video tag.
                 </video>
@@ -526,8 +533,7 @@ export default function VideoChat() {
                 <button
                   key={index}
                   className="suggestion-prompt-card"
-                  data-prompt={prompt}
-                  onClick={handleSend}
+                  onClick={() => handleSuggestionClick(prompt)}
                   disabled={isLoading}
                 >
                   {prompt}

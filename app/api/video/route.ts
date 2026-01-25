@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server'
 import Replicate from 'replicate'
 
 const replicate = new Replicate({
-  auth: process.env.REPLICATE_API_TOKEN || process.env.REPLICATE_BEARER_TOKEN,
+  auth: process.env.REPLICATE_API_TOKEN ,
 })
 
 // Content safety filter - blocks inappropriate, dangerous, or abusive content
@@ -69,24 +69,28 @@ function validatePromptSafety(prompt: string): { safe: boolean; reason?: string 
 // Calculate estimated speaking time from text
 // Average speaking rate: ~150 words per minute = ~2.5 words per second
 function calculateVideoDuration(text: string): number {
-  const words = text.trim().split(/\s+/).length
-  const speakingRate = 2.5 // words per second
-  const baseDuration = Math.ceil(words / speakingRate)
+  // TESTING: Set to 4 seconds (minimum supported by Sora-2) for testing
+  return 4
   
-  // Add buffer for pauses, natural breaks, and ending silence
-  const bufferSeconds = 2 // 2 seconds for pauses and ending
-  
-  const totalDuration = baseDuration + bufferSeconds
-  
-  // Sora-2 supports: 4, 8, or 12 seconds
-  // Choose the closest supported duration that fits the content
-  if (totalDuration <= 4) {
-    return 4
-  } else if (totalDuration <= 8) {
-    return 8
-  } else {
-    return 12 // For longer scripts
-  }
+  // Original calculation (commented out for testing):
+  // const words = text.trim().split(/\s+/).length
+  // const speakingRate = 2.5 // words per second
+  // const baseDuration = Math.ceil(words / speakingRate)
+  // 
+  // // Add buffer for pauses, natural breaks, and ending silence
+  // const bufferSeconds = 2 // 2 seconds for pauses and ending
+  // 
+  // const totalDuration = baseDuration + bufferSeconds
+  // 
+  // // Sora-2 supports: 4, 8, or 12 seconds
+  // // Choose the closest supported duration that fits the content
+  // if (totalDuration <= 4) {
+  //   return 4
+  // } else if (totalDuration <= 8) {
+  //   return 8
+  // } else {
+  //   return 12 // For longer scripts
+  // }
 }
 
 export async function POST(request: Request) {
@@ -129,7 +133,7 @@ export async function POST(request: Request) {
     const estimatedDuration = calculateVideoDuration(script)
     
     // Estimate processing time (in seconds) based on actual performance data
-    // Real data: 12s video took ~181 seconds (180983ms)
+    // Real data: 4s video took ~86 seconds (1m 25.9s), 12s video took ~181 seconds
     // Using conservative estimates with buffer for variability
     const estimatedProcessingTime = estimatedDuration <= 4 ? 100 : estimatedDuration <= 8 ? 150 : 200
     
@@ -144,23 +148,8 @@ export async function POST(request: Request) {
       speakingEndTime: speakingEndTime
     })
     
-    // Create a focused prompt that guides video generation for migrant worker scenarios
-    // The script (prompt) will be spoken in the video, so we need to ensure proper timing
-    const enhancedPrompt = `A helpful educational video for migrant workers in Singapore. 
-    The script to be spoken is: "${script}"
-    The video should be clear, supportive, and show practical step-by-step guidance. 
-    Focus on workplace safety, workers' rights, what to do in emergencies, or helpful information for migrant workers. 
-    Include diverse types of migrant workers: construction workers, domestic workers, factory workers, service workers, 
-    healthcare workers, cleaners, security guards, and other migrant workers in Singapore. 
-    Professional, informative, and culturally sensitive. 
-    Make it easy to understand with clear visual demonstrations that represent various migrant worker occupations.
-    Critical timing instructions: The video is exactly ${estimatedDuration} seconds total. 
-    Speak the entire script clearly and finish all speaking within the first ${speakingEndTime} seconds. 
-    The script must be fully spoken and completed by second ${speakingEndTime}. 
-    Then include ${silenceDuration} full second of natural pause or complete silence at the end (final ${silenceDuration} second, seconds ${speakingEndTime + 1}-${estimatedDuration}). 
-    This ensures the final sentence is completely finished and heard before any ending. 
-    The video must have a complete ending with no abrupt cuts - finish speaking the complete script by second ${speakingEndTime}, 
-    show a natural conclusion, and end smoothly with silence/pause in the final ${silenceDuration} second.`
+    // Use only the LLM response (script) directly for video generation, no extra prompts
+    const enhancedPrompt = script
 
     const startTime = Date.now()
     
@@ -177,19 +166,40 @@ export async function POST(request: Request) {
     // Call Replicate Sora model
     // Sora-2 supports duration: 4, 8, or 12 seconds (integer only)
     // Duration is dynamically calculated based on script length
-    const output = await replicate.run(
-      "openai/sora-2",
-      {
-        input: {
-          prompt: enhancedPrompt,
-          seconds: estimatedDuration // Dynamic duration based on script length
-        }
+    
+    // Create prediction and poll for results (more reliable than replicate.run)
+    // Use the model identifier directly - Replicate will resolve it
+    const prediction = await replicate.predictions.create({
+      version: "openai/sora-2", // Use version instead of model
+      input: {
+        prompt: enhancedPrompt,
+        seconds: estimatedDuration
       }
-    )
+    })
+    
+    console.log('Created prediction:', prediction.id)
+    
+    // Poll for completion
+    let polledPrediction = prediction
+    const maxWaitTime = 300000 // 5 minutes max
+    const startPollTime = Date.now()
+    
+    while ((polledPrediction.status === 'starting' || polledPrediction.status === 'processing') && 
+           (Date.now() - startPollTime) < maxWaitTime) {
+      await new Promise(resolve => setTimeout(resolve, 2000)) // Wait 2 seconds between polls
+      polledPrediction = await replicate.predictions.get(prediction.id)
+      console.log(`Polling prediction ${prediction.id}, status: ${polledPrediction.status}`)
+    }
+    
+    if (polledPrediction.status !== 'succeeded') {
+      throw new Error(`Prediction failed with status: ${polledPrediction.status}, error: ${JSON.stringify(polledPrediction.error)}`)
+    }
+    
+    const output = polledPrediction.output
     
     const actualProcessingTime = Math.round((Date.now() - startTime) / 1000)
 
-    console.log('Replicate output:', output)
+    console.log('Replicate output:', JSON.stringify(output, null, 2))
     console.log('Output type:', typeof output)
     console.log('Is array:', Array.isArray(output))
 
@@ -199,24 +209,56 @@ export async function POST(request: Request) {
     if (typeof output === 'string') {
       videoUrl = output
     } else if (Array.isArray(output)) {
-      videoUrl = output[0] || output.find((item: any) => typeof item === 'string') || null
+      // Handle array of URLs or objects
+      const firstItem = output[0]
+      if (typeof firstItem === 'string') {
+        videoUrl = firstItem
+      } else if (firstItem && typeof firstItem === 'object') {
+        videoUrl = firstItem.url || firstItem.video_url || firstItem.videoUrl || null
+      } else {
+        videoUrl = output.find((item: any) => typeof item === 'string') || null
+      }
     } else if (output && typeof output === 'object') {
-      // Check common property names
-      videoUrl = (output as any).url || (output as any).video_url || (output as any).videoUrl || null
+      // Check common property names - also check nested structures
+      // Replicate Sora-2 typically returns the URL directly as a string in the output
+      // But handle object cases too
+      videoUrl = (output as any).url || 
+                 (output as any).video_url || 
+                 (output as any).videoUrl ||
+                 (output as any).output?.url ||
+                 (output as any).output?.video_url ||
+                 (output as any).files?.[0]?.url ||
+                 // If output is an array, get first item
+                 (Array.isArray(output) ? output[0] : null) ||
+                 null
+      
+      // If still no URL and output is an object, try to find any string value that looks like a URL
+      if (!videoUrl && typeof output === 'object' && !Array.isArray(output)) {
+        const values = Object.values(output)
+        videoUrl = values.find((v: any) => 
+          typeof v === 'string' && (v.startsWith('http://') || v.startsWith('https://'))
+        ) as string || null
+      }
     }
 
     if (!videoUrl || typeof videoUrl !== 'string') {
       console.error('Unexpected output format:', JSON.stringify(output, null, 2))
+      console.error('Prediction details:', JSON.stringify(polledPrediction, null, 2))
       return NextResponse.json(
         { 
           error: 'No video URL returned from Replicate',
-          details: `Received output type: ${typeof output}, value: ${JSON.stringify(output).substring(0, 200)}`
+          details: `Received output type: ${typeof output}, value: ${JSON.stringify(output).substring(0, 500)}, prediction status: ${polledPrediction.status}`
         },
         { status: 500 }
       )
     }
 
-    console.log('Video generated successfully:', videoUrl)
+    // Ensure URL is properly formatted (Replicate URLs should already be https://)
+    if (!videoUrl.startsWith('http://') && !videoUrl.startsWith('https://')) {
+      videoUrl = `https://${videoUrl}`
+    }
+
+    console.log('Video generated successfully, URL:', videoUrl)
 
     return NextResponse.json({
       videoUrl: videoUrl,
