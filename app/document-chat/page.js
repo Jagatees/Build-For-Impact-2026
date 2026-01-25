@@ -33,54 +33,54 @@ export default function Page() {
     setError("");
 
     try {
-      // Extract text from PDF on client side using browser PDF.js
+      // In development mode, PDF.js has issues, so skip extraction and go to viewer
+      // The viewer page uses Textract which works fine
+      const isDevMode = process.env.NODE_ENV === 'development';
+      
+      if (isDevMode) {
+        // Skip PDF.js extraction in dev mode - just navigate to viewer
+        // Store file info and navigate
+        const pdfUrl = URL.createObjectURL(file);
+        sessionStorage.setItem("pdfUrl", pdfUrl);
+        sessionStorage.setItem("filename", file.name);
+        sessionStorage.setItem("language", selectedLanguage);
+        sessionStorage.removeItem("translatedText"); // Will be generated on viewer page
+        
+        setIsUploading(false);
+        router.push("/document-chat/viewer");
+        return;
+      }
+
+      // Production mode: Try to extract text using PDF.js
       const arrayBuffer = await file.arrayBuffer();
       
-      // Dynamically import pdfjs-dist for client-side only
       let pdfjsLib;
-      
-      // Ensure we're in browser environment
-      if (typeof window === 'undefined') {
-        throw new Error("PDF processing must run in browser");
-      }
-      
       try {
-        // Import pdfjs-dist - handle different export formats
         const pdfjsModule = await import('pdfjs-dist');
+        pdfjsLib = pdfjsModule.default || pdfjsModule.pdfjsLib || pdfjsModule;
         
-        // Try different ways to access the library
-        pdfjsLib = pdfjsModule.default || 
-                   pdfjsModule.pdfjsLib || 
-                   pdfjsModule;
-        
-        // Validate we have the library
-        if (!pdfjsLib) {
-          throw new Error("PDF.js module returned empty");
-        }
-        
-        // Check for getDocument - try different property names
-        if (typeof pdfjsLib.getDocument !== 'function') {
-          // Try alternative exports
-          pdfjsLib = pdfjsModule.getDocument ? pdfjsModule : pdfjsLib;
-          if (typeof pdfjsLib.getDocument !== 'function') {
-            throw new Error(`PDF.js getDocument not found. Available: ${Object.keys(pdfjsLib).join(', ')}`);
+        if (!pdfjsLib || typeof pdfjsLib.getDocument !== 'function') {
+          if (pdfjsModule.getDocument) {
+            pdfjsLib = pdfjsModule;
+          } else {
+            throw new Error("PDF.js getDocument not found");
           }
         }
         
-        // Configure worker
         if (pdfjsLib.GlobalWorkerOptions) {
-          const version = pdfjsLib.version || '5.4.530';
-          pdfjsLib.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${version}/build/pdf.worker.min.mjs`;
+          const version = pdfjsLib.version || '4.0.379';
+          pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${version}/pdf.worker.min.js`;
         }
       } catch (importError) {
-        console.error("PDF.js import error:", importError);
-        const errorDetails = importError.message || String(importError);
-        throw new Error(`Failed to load PDF.js: ${errorDetails}. Please restart the dev server (npm run dev) and try again.`);
-      }
-      
-      // Final check
-      if (!pdfjsLib || typeof pdfjsLib.getDocument !== 'function') {
-        throw new Error("PDF.js library is missing getDocument function");
+        // If PDF.js fails, fallback to viewer page
+        console.warn("PDF.js import failed, redirecting to viewer:", importError);
+        const pdfUrl = URL.createObjectURL(file);
+        sessionStorage.setItem("pdfUrl", pdfUrl);
+        sessionStorage.setItem("filename", file.name);
+        sessionStorage.setItem("language", selectedLanguage);
+        setIsUploading(false);
+        router.push("/document-chat/viewer");
+        return;
       }
       
       const loadingTask = pdfjsLib.getDocument({ 
@@ -121,27 +121,37 @@ export default function Page() {
         throw new Error(errorData.error || "Translation failed");
       }
 
-      // ✅ Backend now returns JSON
       const data = await response.json();
 
-      // ✅ Store translation
+      // Store translation
       sessionStorage.setItem("translatedText", data.translatedText);
-
-      sessionStorage.setItem("originalText", extractedText); // English text
-
-      // ✅ Store metadata
+      sessionStorage.setItem("originalText", extractedText);
       sessionStorage.setItem("language", selectedLanguage);
       sessionStorage.setItem("filename", file.name);
 
-      // ✅ Store PDF blob URL
       const pdfUrl = URL.createObjectURL(file);
       sessionStorage.setItem("pdfUrl", pdfUrl);
 
-      // ✅ Navigate AFTER everything is saved
       router.push("/document-chat/viewer");
     } catch (err) {
       console.error(err);
-      setError(err.message || "Failed to translate document.");
+      // If any error occurs, fallback to viewer page
+      if (file) {
+        const pdfUrl = URL.createObjectURL(file);
+        sessionStorage.setItem("pdfUrl", pdfUrl);
+        sessionStorage.setItem("filename", file.name);
+        sessionStorage.setItem("language", selectedLanguage);
+        router.push("/document-chat/viewer");
+      } else {
+        setError(err.message || "Failed to process document. Redirecting to viewer...");
+        setTimeout(() => {
+          if (file) {
+            const pdfUrl = URL.createObjectURL(file);
+            sessionStorage.setItem("pdfUrl", pdfUrl);
+            router.push("/document-chat/viewer");
+          }
+        }, 2000);
+      }
     } finally {
       setIsUploading(false);
     }
