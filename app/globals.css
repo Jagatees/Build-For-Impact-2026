@@ -20,7 +20,7 @@ body {
 }
 
 body {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #FFA500 0%, #FF8C00 100%);
   min-height: 100vh;
   color: #333;
 }
@@ -36,6 +36,80 @@ a {
   padding: 2rem;
 }
 
+/* Standard Navigation Styles - Used across all pages */
+.navbar {
+  position: sticky;
+  top: 0;
+  z-index: 1000;
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(10px);
+  border-bottom: 1px solid #e2e8f0;
+  width: 100%;
+  display: block !important;
+  visibility: visible !important;
+}
+
+.nav-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 1rem 2rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.brand-logo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  text-decoration: none;
+}
+
+.logo-wrapper {
+  border-radius: 8px;
+  overflow: hidden;
+  display: flex;
+  width: 40px;
+  height: 40px;
+  flex-shrink: 0;
+}
+
+.logo-img {
+  width: 40px;
+  height: 40px;
+  object-fit: contain;
+}
+
+.brand-name {
+  font-weight: 800;
+  font-size: 1.25rem;
+  color: #1E293B;
+  letter-spacing: -0.5px;
+}
+
+.nav-links {
+  display: flex;
+  gap: 2rem;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  align-items: center;
+}
+
+.nav-item {
+  text-decoration: none;
+  color: #64748B;
+  font-weight: 500;
+  font-size: 0.95rem;
+  transition: color 0.2s;
+}
+
+.nav-item:hover,
+.nav-item.active {
+  color: #FFA500;
+}
+
+/* Legacy nav styles for backward compatibility */
 .nav {
   background: rgba(255, 255, 255, 0.95);
   padding: 1rem 2rem;
@@ -51,19 +125,13 @@ a {
   align-items: center;
 }
 
-.nav-links {
-  display: flex;
-  gap: 2rem;
-  list-style: none;
-}
-
 .nav-links a {
   font-weight: 500;
   transition: color 0.3s;
 }
 
 .nav-links a:hover {
-  color: #667eea;
+  color: #FFA500;
 }
 
 .card {
@@ -75,7 +143,7 @@ a {
 }
 
 .card h1 {
-  color: #667eea;
+  color: #FFA500;
   margin-bottom: 1rem;
   font-size: 2.5rem;
 }
@@ -89,7 +157,7 @@ a {
 .btn {
   display: inline-block;
   padding: 0.75rem 2rem;
-  background: #667eea;
+  background: #FFA500;
   color: white;
   border-radius: 8px;
   font-weight: 500;
@@ -186,11 +254,11 @@ a {
 }
 
 .language-dropdown:hover:not(:disabled) {
-  border-color: #667eea;
+  border-color: #FFA500;
 }
 
 .language-dropdown:focus {
-  border-color: #667eea;
+  border-color: #FFA500;
   box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
 }
 
@@ -217,7 +285,7 @@ a {
 .pdf-upload-label {
   display: inline-block;
   padding: 0.5rem 1rem;
-  background: #667eea;
+  background: #FFA500;
   color: white;
   border-radius: 8px;
   font-size: 0.9rem;
@@ -301,7 +369,7 @@ a {
 
 .copy-translated-button {
   padding: 0.4rem 0.75rem;
-  background: #667eea;
+  background: #FFA500;
   color: white;
   border: none;
   border-radius: 6px;
@@ -335,7 +403,7 @@ a {
 
 .translated-text-box:focus {
   outline: none;
-  border-color: #667eea;
+  border-color: #FFA500;
   background: white;
 }
 
@@ -383,7 +451,7 @@ a {
 }
 
 .message-bubble.user .message-content {
-  background: #667eea;
+  background: #FFA500;
   color: white;
   border-bottom-right-radius: 4px;
 }
@@ -414,7 +482,7 @@ a {
 }
 
 .copy-button:hover {
-  color: #667eea;
+  color: #FFA500;
   transform: scale(1.1);
 }
 
@@ -443,7 +511,7 @@ a {
 }
 
 .chat-input-field:focus {
-  border-color: #667eea;
+  border-color: #FFA500;
   background-color: white;
   box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
 }
@@ -456,7 +524,7 @@ a {
   width: 44px;
   height: 44px;
   border-radius: 50%;
-  background: #667eea;
+  background: #FFA500;
   color: white;
   border: none;
   cursor: pointer;
@@ -573,7 +641,7 @@ a {
 
 .faq-icon {
   font-size: 1.5rem;
-  color: #667eea;
+  color: #FFA500;
   font-weight: bold;
   transition: transform 0.3s;
 }
@@ -619,7 +687,7 @@ a {
   align-items: center;
   justify-content: center;
   padding: 3rem 2rem;
-  border: 3px dashed #667eea;
+  border: 3px dashed #FFA500;
   border-radius: 12px;
   cursor: pointer;
   transition: all 0.3s;
@@ -681,7 +749,7 @@ a {
 }
 
 .analysis-result h2 {
-  color: #667eea;
+  color: #FFA500;
   margin-bottom: 1rem;
   font-size: 1.8rem;
 }
@@ -708,7 +776,7 @@ a {
 .loading-indicator {
   text-align: center;
   padding: 2rem;
-  color: #667eea;
+  color: #FFA500;
   font-weight: 500;
 }
 
@@ -746,7 +814,7 @@ a {
 }
 
 .form-input:focus {
-  border-color: #667eea;
+  border-color: #FFA500;
 }
 
 .form-input:disabled {
@@ -830,7 +898,7 @@ select.form-input {
   width: 20px;
   height: 20px;
   cursor: pointer;
-  accent-color: #667eea;
+  accent-color: #FFA500;
 }
 
 .radio-label input[type="radio"]:disabled {
@@ -979,7 +1047,7 @@ select.form-input {
   padding: 1.5rem;
   background: #f8f9fa;
   border-radius: 8px;
-  border-left: 4px solid #667eea;
+  border-left: 4px solid #FFA500;
 }
 
 .question-header {
@@ -990,7 +1058,7 @@ select.form-input {
 
 .question-number {
   font-weight: bold;
-  color: #667eea;
+  color: #FFA500;
 }
 
 .question-text {
@@ -1057,7 +1125,7 @@ select.form-input {
 }
 
 .vote-btn:hover {
-  border-color: #667eea;
+  border-color: #FFA500;
   background: #f0f2ff;
 }
 
@@ -1161,7 +1229,7 @@ select.form-input {
 
 .expand-icon {
   font-size: 1.2rem;
-  color: #667eea;
+  color: #FFA500;
   font-weight: bold;
   user-select: none;
 }
@@ -1205,7 +1273,7 @@ select.form-input {
   padding: 1rem;
   border-radius: 8px;
   margin-bottom: 1rem;
-  border-left: 3px solid #667eea;
+  border-left: 3px solid #FFA500;
 }
 
 .review-meta {
@@ -1218,7 +1286,7 @@ select.form-input {
 
 .review-number {
   font-weight: 600;
-  color: #667eea;
+  color: #FFA500;
 }
 
 .review-date {
@@ -1257,7 +1325,7 @@ select.form-input {
   background: white;
   padding: 1.5rem;
   border-radius: 8px;
-  border: 2px dashed #667eea;
+  border: 2px dashed #FFA500;
 }
 
 .add-review-section h3 {
@@ -1300,7 +1368,7 @@ select.form-input {
 }
 
 .hero-section {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #FFA500 0%, #764ba2 100%);
   padding: 8rem 2rem 6rem;
   text-align: center;
   color: white;
@@ -1400,7 +1468,7 @@ select.form-input {
 .stat-number {
   font-size: 3.5rem;
   font-weight: 700;
-  color: #667eea;
+  color: #FFA500;
   margin-bottom: 0.5rem;
 }
 
@@ -1495,7 +1563,7 @@ select.form-input {
   background: #f0f4ff;
   border-radius: 12px;
   margin-bottom: 1rem;
-  border: 2px dashed #667eea;
+  border: 2px dashed #FFA500;
 }
 
 .example-prompts-title {
@@ -1514,9 +1582,9 @@ select.form-input {
 .example-prompt-btn {
   padding: 0.75rem 1rem;
   background: white;
-  border: 2px solid #667eea;
+  border: 2px solid #FFA500;
   border-radius: 8px;
-  color: #667eea;
+  color: #FFA500;
   font-size: 0.9rem;
   cursor: pointer;
   transition: all 0.3s;
@@ -1525,7 +1593,7 @@ select.form-input {
 }
 
 .example-prompt-btn:hover:not(:disabled) {
-  background: #667eea;
+  background: #FFA500;
   color: white;
   transform: translateY(-2px);
   box-shadow: 0 4px 8px rgba(102, 126, 234, 0.3);

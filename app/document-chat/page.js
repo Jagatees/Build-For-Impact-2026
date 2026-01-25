@@ -1,7 +1,49 @@
 'use client'
 
+import Navigation from '@/components/Navigation'
+
+export default function DocumentChat() {
+  return (
+    <div style={{ minHeight: '100vh', background: '#fff', display: 'flex', flexDirection: 'column' }}>
+      <Navigation />
+      
+      <div style={{ 
+        flex: 1, 
+        display: 'flex', 
+        alignItems: 'center', 
+        justifyContent: 'center',
+        padding: '2rem'
+      }}>
+        <div style={{ textAlign: 'center' }}>
+          <h1 style={{ 
+            fontSize: '3rem', 
+            fontWeight: '800', 
+            color: '#1E293B',
+            marginBottom: '1rem'
+          }}>
+            Coming Soon
+          </h1>
+          <p style={{ 
+            fontSize: '1.2rem', 
+            color: '#64748B',
+            maxWidth: '600px',
+            margin: '0 auto'
+          }}>
+            We're working on something amazing. Check back soon!
+          </p>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+/* 
+// COMMENTED OUT - ORIGINAL DOCUMENT CHAT CODE
+'use client'
+
 import { useState, useEffect } from 'react'
 import { jsPDF } from 'jspdf'
+import Navigation from '@/components/Navigation'
 
 const LAMBDA_URL = "https://s5rir3bn5qiz62sikj7w364t2i0bhjxr.lambda-url.us-east-1.on.aws/";
 const SEA_LION_API_URL = 'https://cf-sealion01.jagateesvaran.workers.dev';
@@ -141,7 +183,9 @@ export default function DocumentChat() {
 
   return (
     <div className="h-screen bg-gray-100 flex flex-col font-sans overflow-hidden">
-      <nav className="p-4 bg-white border-b flex justify-between items-center shadow-sm z-10">
+      <Navigation />
+      
+      <div className="p-4 bg-white border-b flex justify-between items-center shadow-sm z-10">
         <h1 className="font-bold text-blue-800">SIT PDF Auditor & Translator</h1>
         <div className="flex gap-4 items-center">
           <select 
@@ -159,10 +203,9 @@ export default function DocumentChat() {
           </button>
           <input type="file" onChange={handlePdfUpload} className="text-xs" />
         </div>
-      </nav>
+      </div>
 
       <div className="flex flex-1 overflow-hidden p-4 gap-4">
-        {/* LEFT: VISUAL MAP WITH TEXT OVERLAY */}
         <div className="w-2/3 bg-white rounded shadow-md flex flex-col border border-gray-300">
           <div className="p-2 border-b bg-gray-50 flex justify-between items-center">
             <span className="text-xs font-bold uppercase text-gray-500">Visual Map: Page {currentPage}</span>
@@ -192,7 +235,6 @@ export default function DocumentChat() {
           </div>
         </div>
 
-        {/* RIGHT: DATA LIST */}
         <div className="w-1/3 bg-white rounded shadow-md flex flex-col border-l-4 border-blue-500 overflow-hidden">
           <div className="p-3 border-b bg-blue-50 text-xs font-bold text-blue-800">DATA INVENTORY ({wordsOnCurrentPage.length})</div>
           <div className="flex-1 overflow-y-auto p-2 space-y-2 bg-gray-50">
@@ -213,7 +255,6 @@ export default function DocumentChat() {
         </div>
       </div>
 
-      {/* BOTTOM: Full PDF Text Display */}
       <div className="bg-white border-t border-gray-300 flex flex-col" style={{ height: '300px' }}>
         <div className="p-2 border-b bg-gray-50 flex justify-between items-center">
           <span className="text-xs font-bold uppercase text-gray-600">Full Document Text</span>
@@ -238,3 +279,4 @@ export default function DocumentChat() {
     </div>
   )
 }
+*/

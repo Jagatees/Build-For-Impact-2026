@@ -1,31 +1,14 @@
 'use client'
 
 import Link from 'next/link'
+import Navigation from '@/components/Navigation'
 
 export default function Home() {
   return (
     <div className="landing-page">
       
       {/* --- NAVIGATION --- */}
-      <header className="navbar">
-        <div className="nav-container">
-          <Link href="/" className="brand-logo">
-            <span className="brand-name">AbangSG</span>
-          </Link>
-
-          <nav className="nav-links">
-            <Link href="/" className="nav-item active">Home</Link>
-            <Link href="/chat" className="nav-item">AI Chat</Link>
-            <Link href="/voice-chat" className="nav-item">Voice</Link>
-            <Link href="/reviews" className="nav-item">Reviews</Link>
-            <Link href="/faq" className="nav-item">FAQ</Link>
-          </nav>
-
-          <div className="nav-cta">
-             <Link href="/chat" className="btn-small">Get Help</Link>
-          </div>
-        </div>
-      </header>
+      <Navigation />
 
       {/* --- HERO SECTION --- */}
       <section className="hero">
@@ -146,10 +129,10 @@ export default function Home() {
 
         /* VARIABLES */
         :root {
-          --primary: #2563EB; /* Trustworthy Blue */
-          --primary-dark: #1E40AF;
+          --primary: #FFA500; /* Warm Orange */
+          --primary-dark: #FF8C00;
           --accent: #F97316; /* Warm Orange */
-          --bg-soft: #F8FAFC;
+          --bg-soft: #FFF7ED;
           --text-main: #1E293B;
           --text-muted: #64748B;
         }
@@ -188,7 +171,7 @@ export default function Home() {
 
         .btn-primary {
           background: var(--primary); color: white; padding: 1rem 2rem; border-radius: 50px;
-          text-decoration: none; font-weight: 600; box-shadow: 0 4px 14px rgba(37, 99, 235, 0.3);
+          text-decoration: none; font-weight: 600; box-shadow: 0 4px 14px rgba(255, 165, 0, 0.3);
           transition: transform 0.2s, background 0.2s;
         }
         .btn-primary:hover { background: var(--primary-dark); transform: translateY(-2px); }
@@ -210,12 +193,12 @@ export default function Home() {
         /* HERO SECTION */
         .hero {
           position: relative; padding: 6rem 2rem 4rem;
-          background: linear-gradient(180deg, #EFF6FF 0%, #fff 100%);
+          background: linear-gradient(180deg, #FFF7ED 0%, #fff 100%);
           text-align: center; overflow: hidden;
         }
         .hero-content { position: relative; z-index: 10; max-width: 800px; margin: 0 auto; }
         .hero-badge {
-          display: inline-block; background: #DBEAFE; color: var(--primary); 
+          display: inline-block; background: #FFEDD5; color: var(--primary); 
           padding: 0.25rem 0.75rem; border-radius: 20px; font-size: 0.85rem; font-weight: 600;
           margin-bottom: 1.5rem;
         }
@@ -243,8 +226,8 @@ export default function Home() {
         .hero-shape {
           position: absolute; border-radius: 50%; filter: blur(80px); opacity: 0.6; z-index: 0;
         }
-        .shape-1 { width: 400px; height: 400px; background: #DBEAFE; top: -100px; left: -100px; }
-        .shape-2 { width: 300px; height: 300px; background: #FFEDD5; bottom: 50px; right: -50px; }
+        .shape-1 { width: 400px; height: 400px; background: #FFEDD5; top: -100px; left: -100px; }
+        .shape-2 { width: 300px; height: 300px; background: #FFF4E6; bottom: 50px; right: -50px; }
 
         /* FEATURES SECTION */
         .features { padding: 5rem 2rem; background: #fff; }
@@ -267,9 +250,9 @@ export default function Home() {
           width: 50px; height: 50px; border-radius: 12px; display: flex; align-items: center; justify-content: center;
           font-size: 1.5rem; margin-bottom: 1.5rem;
         }
-        .icon-box.blue { background: #EFF6FF; }
-        .icon-box.orange { background: #FFF7ED; }
-        .icon-box.red { background: #FEF2F2; }
+        .icon-box.blue { background: #FFF7ED; }
+        .icon-box.orange { background: #FFEDD5; }
+        .icon-box.red { background: #FFE4D6; }
 
         .feature-card h3 { font-size: 1.25rem; font-weight: 700; margin-bottom: 1rem; color: var(--text-main); }
         .feature-card p { color: var(--text-muted); line-height: 1.6; margin-bottom: 1.5rem; }
