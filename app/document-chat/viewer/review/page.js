@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import Navigation from "@/components/Navigation";
 
 export default function ReviewPage() {
   const [pdfUrl, setPdfUrl] = useState(null);
@@ -62,7 +63,9 @@ export default function ReviewPage() {
   };
 
   return (
-    <div className="h-screen flex bg-gray-100">
+    <div className="min-h-screen flex flex-col bg-gray-100">
+      <Navigation />
+      <div className="flex flex-1" style={{ height: 'calc(100vh - 60px)' }}>
       {/* LEFT: ORIGINAL PDF */}
       <div className="w-1/2 flex flex-col bg-white border-r">
         <div className="px-6 py-4 border-b text-sm font-semibold">
@@ -137,6 +140,7 @@ export default function ReviewPage() {
             </div>
           ))}
         </div>
+      </div>
       </div>
     </div>
   );
