@@ -69,28 +69,24 @@ function validatePromptSafety(prompt: string): { safe: boolean; reason?: string 
 // Calculate estimated speaking time from text
 // Average speaking rate: ~150 words per minute = ~2.5 words per second
 function calculateVideoDuration(text: string): number {
-  // TESTING: Set to 4 seconds (minimum supported by Sora-2) for testing
-  return 4
+  const words = text.trim().split(/\s+/).length
+  const speakingRate = 2.5 // words per second
+  const baseDuration = Math.ceil(words / speakingRate)
   
-  // Original calculation (commented out for testing):
-  // const words = text.trim().split(/\s+/).length
-  // const speakingRate = 2.5 // words per second
-  // const baseDuration = Math.ceil(words / speakingRate)
-  // 
-  // // Add buffer for pauses, natural breaks, and ending silence
-  // const bufferSeconds = 2 // 2 seconds for pauses and ending
-  // 
-  // const totalDuration = baseDuration + bufferSeconds
-  // 
-  // // Sora-2 supports: 4, 8, or 12 seconds
-  // // Choose the closest supported duration that fits the content
-  // if (totalDuration <= 4) {
-  //   return 4
-  // } else if (totalDuration <= 8) {
-  //   return 8
-  // } else {
-  //   return 12 // For longer scripts
-  // }
+  // Add buffer for pauses, natural breaks, and ending silence
+  const bufferSeconds = 2 // 2 seconds for pauses and ending
+  
+  const totalDuration = baseDuration + bufferSeconds
+  
+  // Sora-2 supports: 4, 8, or 12 seconds
+  // Choose the closest supported duration that fits the content
+  if (totalDuration <= 4) {
+    return 4
+  } else if (totalDuration <= 8) {
+    return 8
+  } else {
+    return 12 // For longer scripts
+  }
 }
 
 export async function POST(request: Request) {
@@ -148,8 +144,20 @@ export async function POST(request: Request) {
       speakingEndTime: speakingEndTime
     })
     
-    // Use only the LLM response (script) directly for video generation, no extra prompts
-    const enhancedPrompt = script
+    // Create an enhanced prompt that guides video creation for migrant workers
+    // Combine the LLM response with helpful context about migrant worker topics
+    const enhancedPrompt = `Create a helpful educational video for migrant workers in Singapore. 
+The video should clearly explain and demonstrate: "${script}"
+
+Guidelines for the video:
+- Show practical, step-by-step guidance that is easy to understand
+- Include diverse types of migrant workers: construction workers, domestic workers, factory workers, service workers, healthcare workers, cleaners, security guards, and other migrant workers in Singapore
+- Make it professional, informative, and culturally sensitive
+- Use clear visual demonstrations that represent various migrant worker occupations
+- Focus on workplace safety, workers' rights, what to do in emergencies, or helpful information for migrant workers
+- The video should be supportive and empowering, helping migrant workers understand their situation and know what to do
+
+The script to be spoken in the video is: "${script}"`
 
     const startTime = Date.now()
     
