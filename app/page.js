@@ -19,12 +19,12 @@ export default function Home() {
             <span className="highlight">Our Priority.</span>
           </h1>
           <p className="hero-subtitle">
-            AbangSG is your 24/7 companion for employment advice, contract checks, and community support. 
+            MigrantBuddie is your 24/7 companion for employment advice, contract checks, and community support. 
             We bridge the gap between you and the help you need.
           </p>
           <div className="hero-buttons">
             <Link href="/abangchat" className="btn-primary">
-              Chat with AbangSG
+              Chat with MigrantBuddie
             </Link>
           </div>
           
@@ -98,7 +98,7 @@ export default function Home() {
       <section className="cta-section">
         <div className="cta-container">
           <h2>Never Walk Alone</h2>
-          <p>Join thousands of brothers and sisters using AbangSG today.</p>
+          <p>Join thousands of brothers and sisters using MigrantBuddie today.</p>
           <Link href="/abangchat" className="btn-white">Launch Assistant</Link>
         </div>
       </section>
@@ -106,7 +106,7 @@ export default function Home() {
       {/* --- FOOTER --- */}
       <footer className="footer">
         <div className="footer-content">
-          <p>&copy; {new Date().getFullYear()} AbangSG. Built for impact.</p>
+          <p>&copy; {new Date().getFullYear()} MigrantBuddie. Built for impact.</p>
         </div>
       </footer>
 

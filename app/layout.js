@@ -1,8 +1,8 @@
 import './globals.css'
 
 export const metadata = {
-  title: 'AbangSG',
-  description: 'AbangSG - Your 24/7 companion for employment advice, contract checks, and community support',
+  title: 'MigrantBuddie',
+  description: 'MigrantBuddie - Your 24/7 companion for employment advice, contract checks, and community support',
   icons: {
     icon: '/logo.jpg',
     apple: '/logo.jpg',

@@ -3,6 +3,7 @@
 import { useState, useCallback } from "react";
 import { FileText, Plus, Mic, Lock } from "lucide-react";
 import { useRouter } from "next/navigation";
+import Navigation from "@/components/Navigation";
 
 const seaLionLanguages = [
   { code: "en", label: "English" },
@@ -176,7 +177,9 @@ export default function Page() {
   }, []);
 
   return (
-    <div className="min-h-screen bg-gray-100 flex flex-col items-center px-4 py-12 gap-8">
+    <div className="min-h-screen bg-gray-100 flex flex-col">
+      <Navigation />
+      <div className="flex flex-col items-center px-4 py-12 gap-8">
       {/* UPLOAD CARD */}
       <div className="w-full max-w-xl bg-white rounded-2xl shadow-lg p-8 text-center">
         <h1 className="text-3xl font-bold text-gray-900 mb-3">
@@ -238,7 +241,7 @@ export default function Page() {
           <select
             value={selectedLanguage}
             onChange={(e) => setSelectedLanguage(e.target.value)}
-            className="border border-gray-300 rounded-lg px-3 py-2"
+            className="border border-gray-300 rounded-lg px-3 py-2 bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
           >
             {seaLionLanguages.map((lang) => (
               <option key={lang.code} value={lang.code}>
@@ -267,8 +270,7 @@ export default function Page() {
           <span className="text-sm">Your documents are safe and private.</span>
         </div>
       </div>
-
-     
+      </div>
     </div>
   );
 }

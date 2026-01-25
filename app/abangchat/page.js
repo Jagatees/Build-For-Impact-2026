@@ -229,7 +229,7 @@ export default function Chat() {
                     <div className="bot-avatar">
                       <Image 
                         src="/logo.jpg" 
-                        alt="AbangSG Logo" 
+                        alt="MigrantBuddie Logo" 
                         width={32} 
                         height={32} 
                         className="bot-avatar-img"
@@ -262,7 +262,7 @@ export default function Chat() {
                   <div className="bot-avatar">
                     <Image 
                       src="/logo.jpg" 
-                      alt="AbangSG Logo" 
+                      alt="MigrantBuddie Logo" 
                       width={32} 
                       height={32} 
                       className="bot-avatar-img"

@@ -19,7 +19,7 @@ export default function Navigation() {
             {!imageError ? (
               <Image 
                 src="/logo.jpg"    // This looks for public/logo.jpg
-                alt="AbangSG Logo" 
+                alt="MigrantBuddie Logo" 
                 width={40} 
                 height={40} 
                 className="logo-img"
@@ -31,7 +31,7 @@ export default function Navigation() {
               <span style={{ fontSize: '24px' }}>🤝</span> 
             )}
           </div>
-          <span className="brand-name">AbangSG</span>
+          <span className="brand-name">MigrantBuddie</span>
         </Link>
 
         <nav className="nav-links">
