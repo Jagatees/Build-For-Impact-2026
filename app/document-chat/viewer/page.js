@@ -11,10 +11,15 @@ export default function ViewerPage() {
   useEffect(() => {
     const url = sessionStorage.getItem("pdfUrl");
     const text = sessionStorage.getItem("translatedText");
-    
+    const originalText = sessionStorage.getItem("originalText");
 
     if (url) setPdfUrl(url);
-    if (text) setTranslatedText(text);
+    if (text) {
+      setTranslatedText(text);
+    } else if (originalText) {
+      // If no translation but we have original text, show that
+      setTranslatedText(originalText);
+    }
   }, []);
 
   // ✅ NEW FUNCTION
