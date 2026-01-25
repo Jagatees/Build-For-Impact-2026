@@ -34,49 +34,59 @@ function chunkText(text, chunkSize = 2500) {
 
 export async function POST(req) {
   try {
-    const formData = await req.formData();
-    const file = formData.get("file");
-    const targetLanguage = formData.get("language");
-
-    if (!file) {
-      return NextResponse.json({ error: "No file uploaded" }, { status: 400 });
-    }
-
-    // Check if it's a PDF file
-    if (file.type !== 'application/pdf' && !file.name?.endsWith('.pdf')) {
-      return NextResponse.json(
-        { error: 'File must be a PDF' },
-        { status: 400 }
-      )
-    }
-
-    /* ---------- Extract text from PDF using pdf-parse ---------- */
-    const arrayBuffer = await file.arrayBuffer();
-    const buffer = Buffer.from(arrayBuffer);
-
-    // Use require for server-side to avoid webpack bundling issues
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
-    const pdfParseModule = require('pdf-parse');
+    // Accept JSON with extracted text (extracted on client side)
+    const contentType = req.headers.get("content-type");
     
-    // Get the PDFParse class - it's exported as a property
-    const PDFParse = pdfParseModule.PDFParse || pdfParseModule.default;
-    
-    if (!PDFParse) {
-      throw new Error('PDFParse class not found. Available exports: ' + Object.keys(pdfParseModule).join(', '));
-    }
-    
-    // Instantiate PDFParse with buffer data
-    const parser = new PDFParse({ data: buffer });
-    
-    // Extract text from PDF using the getText() method
-    const result = await parser.getText();
-    const extractedText = result.text;
+    let extractedText;
+    let targetLanguage;
 
-    if (!extractedText || extractedText.trim().length === 0) {
-      return NextResponse.json(
-        { error: 'No text could be extracted from the PDF. The PDF might be image-based or empty.' },
-        { status: 400 }
-      );
+    if (contentType?.includes("application/json")) {
+      // New approach: text extracted on client side
+      const body = await req.json();
+      extractedText = body.text;
+      targetLanguage = body.language;
+
+      if (!extractedText || !extractedText.trim()) {
+        return NextResponse.json(
+          { error: "No text provided for translation" },
+          { status: 400 }
+        );
+      }
+    } else {
+      // Fallback: old form data approach (for backward compatibility)
+      const formData = await req.formData();
+      const file = formData.get("file");
+      targetLanguage = formData.get("language");
+
+      if (!file) {
+        return NextResponse.json({ error: "No file uploaded" }, { status: 400 });
+      }
+
+      // Check if it's a PDF file
+      if (file.type !== 'application/pdf' && !file.name?.endsWith('.pdf')) {
+        return NextResponse.json(
+          { error: 'File must be a PDF' },
+          { status: 400 }
+        )
+      }
+
+      /* ---------- Extract text from PDF using pdf-parse (fallback) ---------- */
+      const arrayBuffer = await file.arrayBuffer();
+      const buffer = Buffer.from(arrayBuffer);
+
+      // Load pdf-parse using require (server-side only)
+      // eslint-disable-next-line @typescript-eslint/no-require-imports
+      const pdfParse = require('pdf-parse');
+      
+      const data = await pdfParse(buffer);
+      extractedText = data.text || '';
+
+      if (!extractedText || extractedText.trim().length === 0) {
+        return NextResponse.json(
+          { error: 'No text could be extracted from the PDF. The PDF might be image-based or empty.' },
+          { status: 400 }
+        );
+      }
     }
 
     /* ---------- Translation (CHUNKED) ---------- */

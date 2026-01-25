@@ -33,17 +33,53 @@ export default function Page() {
     setError("");
 
     try {
-      const formData = new FormData();
-      formData.append("file", file);
-      formData.append("language", selectedLanguage);
+      // Extract text from PDF on client side using browser PDF.js
+      const arrayBuffer = await file.arrayBuffer();
+      
+      // Dynamically import pdfjs-dist for client-side only
+      const pdfjsLib = await import('pdfjs-dist');
+      
+      // Set worker source - use version 5.4.296 to match the installed package
+      // This ensures API and Worker versions are compatible
+      pdfjsLib.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@5.4.296/build/pdf.worker.min.mjs`;
+      
+      // Load the PDF document
+      const loadingTask = pdfjsLib.getDocument({ 
+        data: arrayBuffer,
+        useSystemFonts: true 
+      });
+      const pdf = await loadingTask.promise;
+      
+      // Extract text from all pages
+      let extractedText = '';
+      for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
+        const page = await pdf.getPage(pageNum);
+        const textContent = await page.getTextContent();
+        const pageText = textContent.items
+          .map((item) => item.str)
+          .join(' ');
+        extractedText += pageText + '\n\n';
+      }
 
+      if (!extractedText || extractedText.trim().length === 0) {
+        throw new Error('No text could be extracted from the PDF. The PDF might be image-based or empty.');
+      }
+
+      // Send extracted text to server for translation
       const response = await fetch("/api/document-chat", {
         method: "POST",
-        body: formData,
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          text: extractedText,
+          language: selectedLanguage,
+        }),
       });
 
       if (!response.ok) {
-        throw new Error("Translation failed");
+        const errorData = await response.json();
+        throw new Error(errorData.error || "Translation failed");
       }
 
       // ✅ Backend now returns JSON
@@ -52,7 +88,7 @@ export default function Page() {
       // ✅ Store translation
       sessionStorage.setItem("translatedText", data.translatedText);
 
-      sessionStorage.setItem("originalText", data.originalText); // English text
+      sessionStorage.setItem("originalText", extractedText); // English text
 
       // ✅ Store metadata
       sessionStorage.setItem("language", selectedLanguage);
@@ -66,7 +102,7 @@ export default function Page() {
       router.push("/document-chat/viewer");
     } catch (err) {
       console.error(err);
-      setError("Failed to translate document.");
+      setError(err.message || "Failed to translate document.");
     } finally {
       setIsUploading(false);
     }
