@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
+import Image from 'next/image'
 import Navigation from '@/components/Navigation'
 
 const languages = [
@@ -224,6 +225,26 @@ export default function Chat() {
             <div className="modern-chat-messages">
               {messages.map((message) => (
                 <div key={message.id} className={`modern-message ${message.type}`}>
+                  {message.type === 'bot' && (
+                    <div className="bot-avatar">
+                      <Image 
+                        src="/logo.jpg" 
+                        alt="AbangSG Logo" 
+                        width={32} 
+                        height={32} 
+                        className="bot-avatar-img"
+                        onError={(e) => {
+                          if (e.target.nextElementSibling) {
+                            e.target.style.display = 'none'
+                            e.target.nextElementSibling.style.display = 'flex'
+                          }
+                        }}
+                      />
+                      <div className="bot-avatar-fallback" style={{ display: 'none' }}>
+                        🤝
+                      </div>
+                    </div>
+                  )}
                   <div className="modern-message-content">
                     {message.text}
                   </div>
@@ -238,6 +259,24 @@ export default function Chat() {
               ))}
               {isLoading && (
                 <div className="modern-message bot">
+                  <div className="bot-avatar">
+                    <Image 
+                      src="/logo.jpg" 
+                      alt="AbangSG Logo" 
+                      width={32} 
+                      height={32} 
+                      className="bot-avatar-img"
+                      onError={(e) => {
+                        if (e.target.nextElementSibling) {
+                          e.target.style.display = 'none'
+                          e.target.nextElementSibling.style.display = 'flex'
+                        }
+                      }}
+                    />
+                    <div className="bot-avatar-fallback" style={{ display: 'none' }}>
+                      🤝
+                    </div>
+                  </div>
                   <div className="modern-message-content">
                     <span className="typing-indicator">
                       <span></span>

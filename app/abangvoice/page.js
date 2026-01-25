@@ -112,7 +112,7 @@ export default function VoiceChat() {
   };
 
   return (
-    <div style={{ minHeight: '100vh', background: '#f5f5f5', display: 'flex', flexDirection: 'column' }}>
+    <div style={{ minHeight: '100vh', background: 'linear-gradient(180deg, #FFE4B5 0%, #FFEDD5 50%, #FFFFFF 100%)', display: 'flex', flexDirection: 'column' }}>
       
       {/* --- RIPPLE ANIMATION CSS --- */}
       <style jsx>{`
@@ -198,7 +198,16 @@ export default function VoiceChat() {
               value={selectedLanguage}
               onChange={(e) => setSelectedLanguage(e.target.value)}
               disabled={isLoading || isPlaying}
-              style={{ padding: '0.5rem', borderRadius: '4px', border: '1px solid #cbd5e0', outline: 'none' }}
+              style={{ 
+                padding: '0.5rem', 
+                borderRadius: '4px', 
+                border: '1px solid #cbd5e0', 
+                outline: 'none',
+                background: (isLoading || isPlaying) ? '#f5f5f5' : 'white',
+                color: (isLoading || isPlaying) ? '#999' : '#333',
+                cursor: (isLoading || isPlaying) ? 'not-allowed' : 'pointer',
+                minWidth: '140px'
+              }}
             >
               {languages.map(lang => (
                 <option key={lang.code} value={lang.code}>{lang.name}</option>

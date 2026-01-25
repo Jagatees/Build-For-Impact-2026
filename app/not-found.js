@@ -5,16 +5,15 @@ export default function NotFound() {
     <div>
       <nav className="nav">
         <div className="nav-content">
-          <h2>Build For Impact</h2>
+          <h2>AbangSG</h2>
           <ul className="nav-links">
             <li><Link href="/">Home</Link></li>
-            <li><Link href="/chat">Chat</Link></li>
+            <li><Link href="/abangchat">Chat</Link></li>
             <li><Link href="/document-chat">Document Chat</Link></li>
-            <li><Link href="/voice-chat">Voice Chat</Link></li>
-            <li><Link href="/video-chat">Video Chat</Link></li>
-            <li><Link href="/faq">FAQ</Link></li>
+            <li><Link href="/abangvoice">Voice Chat</Link></li>
+            <li><Link href="/abangvideo">Video Chat</Link></li>
             <li><Link href="/company-review">Company Review</Link></li>
-            <li><Link href="/reviews">View Reviews</Link></li>
+            <li><Link href="/abangreview">View Reviews</Link></li>
           </ul>
         </div>
       </nav>
