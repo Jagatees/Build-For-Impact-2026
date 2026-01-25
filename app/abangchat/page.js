@@ -33,6 +33,131 @@ export default function Chat() {
     })
   }
 
+  // Render markdown formatting (bold, italic, etc.)
+  const renderMarkdown = (text) => {
+    if (!text) return ''
+    
+    // Split by lines to handle line breaks
+    const lines = text.split('\n')
+    
+    return lines.map((line, lineIndex) => {
+      if (!line.trim()) {
+        return <div key={lineIndex} style={{ marginBottom: '0.5rem' }}></div>
+      }
+      
+      const parts = []
+      let currentIndex = 0
+      let partKey = 0
+      
+      // Process bold (**text**)
+      const boldRegex = /\*\*(.+?)\*\*/g
+      let match
+      const boldMatches = []
+      
+      while ((match = boldRegex.exec(line)) !== null) {
+        boldMatches.push({
+          start: match.index,
+          end: match.index + match[0].length,
+          content: match[1]
+        })
+      }
+      
+      // Process italic (*text* but not **text**)
+      // Use a simpler approach: find single asterisks that aren't part of **
+      const italicMatches = []
+      let searchIndex = 0
+      
+      while (searchIndex < line.length) {
+        const asteriskIndex = line.indexOf('*', searchIndex)
+        if (asteriskIndex === -1) break
+        
+        // Check if this is part of ** (bold)
+        const isBoldStart = line[asteriskIndex + 1] === '*'
+        if (isBoldStart) {
+          searchIndex = asteriskIndex + 2
+          continue
+        }
+        
+        // Check if previous character was * (part of **)
+        if (asteriskIndex > 0 && line[asteriskIndex - 1] === '*') {
+          searchIndex = asteriskIndex + 1
+          continue
+        }
+        
+        // Find the closing asterisk
+        const closingIndex = line.indexOf('*', asteriskIndex + 1)
+        if (closingIndex === -1) break
+        
+        // Make sure closing asterisk isn't part of **
+        if (closingIndex + 1 < line.length && line[closingIndex + 1] === '*') {
+          searchIndex = closingIndex + 2
+          continue
+        }
+        
+        // Check if this italic is inside a bold match
+        const isInsideBold = boldMatches.some(bm => 
+          asteriskIndex >= bm.start && asteriskIndex < bm.end
+        )
+        
+        if (!isInsideBold) {
+          const content = line.substring(asteriskIndex + 1, closingIndex)
+          italicMatches.push({
+            start: asteriskIndex,
+            end: closingIndex + 1,
+            content: content
+          })
+          searchIndex = closingIndex + 1
+        } else {
+          searchIndex = asteriskIndex + 1
+        }
+      }
+      
+      // Combine all matches and sort by position
+      const allMatches = [...boldMatches, ...italicMatches].sort((a, b) => a.start - b.start)
+      
+      // Build elements
+      allMatches.forEach((match) => {
+        // Add text before match
+        if (match.start > currentIndex) {
+          parts.push(
+            <span key={`text-${lineIndex}-${partKey++}`}>
+              {line.substring(currentIndex, match.start)}
+            </span>
+          )
+        }
+        
+        // Add formatted text - check if it's a bold match by comparing positions
+        const isBold = boldMatches.some(bm => bm.start === match.start && bm.end === match.end)
+        if (isBold) {
+          parts.push(
+            <strong key={`bold-${lineIndex}-${partKey++}`}>
+              {match.content}
+            </strong>
+          )
+        } else {
+          parts.push(
+            <em key={`italic-${lineIndex}-${partKey++}`}>
+              {match.content}
+            </em>
+          )
+        }
+        
+        currentIndex = match.end
+      })
+      
+      // Add remaining text
+      if (currentIndex < line.length) {
+        parts.push(
+          <span key={`text-end-${lineIndex}-${partKey++}`}>
+            {line.substring(currentIndex)}
+          </span>
+        )
+      }
+      
+      return <div key={lineIndex}>{parts.length > 0 ? parts : line}</div>
+    })
+  }
+
   const handleSend = async (e) => {
     e.preventDefault()
     if (!inputValue.trim() || isLoading) return
@@ -246,7 +371,7 @@ export default function Chat() {
                     </div>
                   )}
                   <div className="modern-message-content">
-                    {message.text}
+                    {message.type === 'bot' ? renderMarkdown(message.text) : message.text}
                   </div>
                   <button
                     className="modern-copy-button"
