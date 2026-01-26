@@ -275,21 +275,29 @@ export default function VideoChat() {
       .then(async (videoResponse) => {
         console.log('📹 Video API response status:', videoResponse.status)
 
+        // Read response body once - clone if needed for error handling
+        const responseClone = videoResponse.clone()
         let videoData
+        
         try {
           videoData = await videoResponse.json()
         } catch (parseError) {
-          const errorText = await videoResponse.text()
-          throw new Error(`Video API error (${videoResponse.status}): ${errorText.substring(0, 200)}`)
+          // If JSON parsing fails, try to read as text from the clone
+          try {
+            const errorText = await responseClone.text()
+            throw new Error(`Video API error (${videoResponse.status}): ${errorText.substring(0, 200)}`)
+          } catch (textError) {
+            throw new Error(`Video API error (${videoResponse.status}): Failed to parse response`)
+          }
         }
 
         if (!videoResponse.ok) {
           console.error('Video API Error:', videoData)
           // Show user-friendly message for blocked content
-          if (videoData.blocked) {
+          if (videoData && videoData.blocked) {
             throw new Error(videoData.error || 'This content cannot be generated. Please ask about topics related to migrant workers in Singapore.')
           }
-          throw new Error(videoData.error || videoData.details || 'Failed to generate video')
+          throw new Error(videoData?.error || videoData?.details || 'Failed to generate video')
         }
 
         // Update ETA with actual estimate from API if available
