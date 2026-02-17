@@ -21,6 +21,53 @@ const LANGUAGE_MAP = {
   'tl': 'Tagalog'
 };
 
+// Azure TTS voice map — Singapore-specific where available
+const AZURE_VOICE_MAP = {
+  'en': 'en-SG-LunaNeural',
+  'ta': 'ta-SG-VenbaNeural',
+  'ms': 'ms-MY-YasminNeural',
+  'zh': 'zh-SG-XiaoxiaoNeural',
+  'hi': 'hi-IN-SwaraNeural',
+  'bn': 'bn-IN-TanishaaNeural',
+  'th': 'th-TH-PremwadeeNeural',
+  'id': 'id-ID-GadisNeural',
+  'tl': 'fil-PH-BlessicaNeural',
+};
+
+async function azureTTS(text, langCode) {
+  const key = process.env.AZURE_TTS_KEY;
+  const endpoint = process.env.AZURE_TTS_ENDPOINT;
+  const region = process.env.AZURE_TTS_REGION || 'southeastasia';
+  if (!key) throw new Error('AZURE_TTS_KEY not set');
+
+  const voice = AZURE_VOICE_MAP[langCode] || AZURE_VOICE_MAP['en'];
+  const ssml = `<speak version="1.0" xmlns="http://www.w3.org/2001/10/synthesis" xml:lang="en-US">
+  <voice name="${voice}">${text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')}</voice>
+</speak>`;
+
+  // Use custom endpoint if provided, otherwise build from region
+  const ttsUrl = endpoint
+    ? `${endpoint.replace(/\/$/, '')}/tts/cognitiveservices/v1`
+    : `https://${region}.tts.speech.microsoft.com/cognitiveservices/v1`;
+
+  const response = await fetch(ttsUrl, {
+    method: 'POST',
+    headers: {
+      'Ocp-Apim-Subscription-Key': key,
+      'Content-Type': 'application/ssml+xml',
+      'X-Microsoft-OutputFormat': 'audio-16khz-128kbitrate-mono-mp3',
+    },
+    body: ssml,
+  });
+
+  if (!response.ok) {
+    const errText = await response.text();
+    throw new Error(`Azure TTS Error: ${response.status} ${errText.substring(0, 200)}`);
+  }
+
+  return Buffer.from(await response.arrayBuffer());
+}
+
 async function querySeaLion(message, conversationHistory = [], targetLangCode = null) {
   if (!message || !message.trim()) throw new Error('Message is required');
 
@@ -91,9 +138,12 @@ export async function POST(request) {
 
       if (!audioFile) return NextResponse.json({ error: 'No audio file' }, { status: 400 });
 
-      const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+      const groq = new OpenAI({
+        apiKey: process.env.GROQ_API_KEY,
+        baseURL: 'https://api.groq.com/openai/v1',
+      });
 
-      // 1. Whisper (Transcribe)
+      // 1. Groq Whisper (Transcribe — much faster than OpenAI Whisper)
       const buffer = Buffer.from(await audioFile.arrayBuffer());
       const tempFilePath = path.join(os.tmpdir(), `${uuidv4()}.wav`);
       fs.writeFileSync(tempFilePath, buffer);
@@ -103,13 +153,13 @@ export async function POST(request) {
       try {
         const whisperOptions = {
           file: fs.createReadStream(tempFilePath),
-          model: 'whisper-1',
+          model: 'whisper-large-v3',
           temperature: 0.0,
         };
-        if (speakLangCode) {
+        if (speakLangCode && speakLangCode !== 'auto') {
           whisperOptions.language = speakLangCode;
         }
-        const transcription = await openai.audio.transcriptions.create(whisperOptions);
+        const transcription = await groq.audio.transcriptions.create(whisperOptions);
         userText = transcription.text;
       } finally {
         try { fs.unlinkSync(tempFilePath); } catch (e) {}
@@ -128,7 +178,7 @@ export async function POST(request) {
       const aiText = await querySeaLion(userText, [], replyLangCode);
       const translateMs = Date.now() - t1;
 
-      // 3. TTS (Speak) — strip URLs and markdown so they aren't read aloud
+      // 3. Azure TTS (Speak) — strip URLs and markdown so they aren't read aloud
       const t2 = Date.now();
       const ttsText = aiText
         .replace(/\[([^\]]+)\]\(https?:\/\/[^\)]+\)/g, '$1')
@@ -136,14 +186,8 @@ export async function POST(request) {
         .replace(/\*\*/g, '')
         .replace(/\n{3,}/g, '\n\n')
         .trim();
-      const mp3Response = await openai.audio.speech.create({
-        model: 'tts-1-hd',
-        voice: 'alloy',
-        input: ttsText || aiText,
-      });
+      const mp3Buffer = await azureTTS(ttsText || aiText, replyLangCode || 'en');
       const ttsMs = Date.now() - t2;
-
-      const mp3Buffer = Buffer.from(await mp3Response.arrayBuffer());
 
       return NextResponse.json({
         success: true,
@@ -186,20 +230,14 @@ export async function POST(request) {
       // If withAudio, also generate TTS
       if (withAudio) {
         const t2 = Date.now();
-        const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
         const ttsText = aiText
           .replace(/\[([^\]]+)\]\(https?:\/\/[^\)]+\)/g, '$1')
           .replace(/https?:\/\/[^\s]+/g, '')
           .replace(/\*\*/g, '')
           .replace(/\n{3,}/g, '\n\n')
           .trim();
-        const mp3Response = await openai.audio.speech.create({
-          model: 'tts-1-hd',
-          voice: 'alloy',
-          input: ttsText || aiText,
-        });
+        const mp3Buffer = await azureTTS(ttsText || aiText, langCode || 'en');
         const ttsMs = Date.now() - t2;
-        const mp3Buffer = Buffer.from(await mp3Response.arrayBuffer());
         return NextResponse.json({
           success: true,
           message: aiText,
