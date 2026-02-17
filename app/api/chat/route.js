@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import OpenAI from 'openai';
 import fs from 'fs';
 import path from 'path';
+import os from 'os';
 import { v4 as uuidv4 } from 'uuid';
 
 const SEA_LION_API_URL = process.env.SEA_LION_API_URL || 'https://cf-sealion01.jagateesvaran.workers.dev';
@@ -16,51 +17,31 @@ const LANGUAGE_MAP = {
   'hi': 'Hindi',
   'bn': 'Bengali',
   'th': 'Thai',
-  'id': 'Indonesian'
+  'id': 'Indonesian',
+  'tl': 'Tagalog'
 };
 
 async function querySeaLion(message, conversationHistory = [], targetLangCode = null) {
   if (!message || !message.trim()) throw new Error('Message is required');
 
-  // 1. DETERMINE TARGET LANGUAGE STRATEGY
-  let langInstruction = "";
-  
-  if (targetLangCode && LANGUAGE_MAP[targetLangCode]) {
-     const langName = LANGUAGE_MAP[targetLangCode];
-     
-     // === THE FIX: STRICT "NO ENGLISH/ROMANIZATION" RULE ===
-     if (targetLangCode !== 'en') {
-        langInstruction = `\n[CRITICAL INSTRUCTION:
-        1. The user has selected ${langName}.
-        2. Reply ONLY in ${langName} script/characters.
-        3. FORBIDDEN: Do NOT provide the Romanized/Latin transliteration (e.g. No Pinyin, No Hinglish).
-        4. FORBIDDEN: Do NOT provide the English translation in brackets.
-        5. FORBIDDEN: Do NOT use any English words.
-        6. OUTPUT: Just the pure ${langName} response.]`;
-     } else {
-        langInstruction = `\n[SYSTEM INSTRUCTION: Reply in English.]`;
-     }
-  } else {
-     // Default: Mirror
-     langInstruction = `\n[SYSTEM INSTRUCTION: Detect the user's language and reply in that EXACT SAME language. Do not mix languages.]`;
-  }
+  const langName = (targetLangCode && LANGUAGE_MAP[targetLangCode]) ? LANGUAGE_MAP[targetLangCode] : 'English';
 
-  const systemPrompt = `You are a helpful assistant for migrant workers in Singapore.
-  Your goal is to be direct, accurate, and helpful.
-  ${langInstruction}`;
-  
-  const endpoint = '/chat'; 
+  const systemPrompt = `You are a translator. Your ONLY job is to translate the user's text into ${langName}.
+
+RULES:
+1. Output ONLY the translated text in ${langName}. Nothing else.
+2. Do NOT answer questions, provide information, or have a conversation.
+3. Do NOT add explanations, notes, or commentary.
+4. Do NOT add "Translation:" or any labels.
+5. If the text is already in ${langName}, output it as-is.
+6. Preserve the original meaning and tone exactly.
+7. FORBIDDEN: Do NOT use Romanized/Latin transliteration (no Pinyin, no Hinglish, etc.).
+8. Output ONLY in the native script/characters of ${langName}.`;
+
+  const fullPrompt = message.trim();
+
+  const endpoint = '/chat';
   const apiUrl = `${SEA_LION_API_URL}${endpoint}`;
-
-  let fullPrompt = message.trim();
-  if (conversationHistory && conversationHistory.length > 0) {
-    const historyText = conversationHistory
-      .filter(msg => msg.role !== 'system')
-      .slice(-6)
-      .map(msg => `${msg.role === 'user' ? 'User' : 'Assistant'}: ${msg.content}`)
-      .join('\n');
-    fullPrompt = `Previous conversation:\n${historyText}\n\nCurrent question: ${message.trim()}`;
-  }
 
   const requestBody = { prompt: fullPrompt, system: systemPrompt };
 
@@ -104,7 +85,9 @@ export async function POST(request) {
     if (contentType.includes('multipart/form-data')) {
       const formData = await request.formData();
       const audioFile = formData.get('file');
-      const langCode = formData.get('language'); 
+      const speakLangCode = formData.get('speakLanguage');
+      const replyLangCode = formData.get('replyLanguage');
+      const transcribeOnly = formData.get('transcribeOnly') === 'true';
 
       if (!audioFile) return NextResponse.json({ error: 'No audio file' }, { status: 400 });
 
@@ -112,59 +95,81 @@ export async function POST(request) {
 
       // 1. Whisper (Transcribe)
       const buffer = Buffer.from(await audioFile.arrayBuffer());
-      const tempFilePath = path.join('/tmp', `${uuidv4()}.wav`);
+      const tempFilePath = path.join(os.tmpdir(), `${uuidv4()}.wav`);
       fs.writeFileSync(tempFilePath, buffer);
-      
+
       let userText = "";
+      const t0 = Date.now();
       try {
-        const transcription = await openai.audio.transcriptions.create({
+        const whisperOptions = {
           file: fs.createReadStream(tempFilePath),
           model: 'whisper-1',
-          temperature: 0.0, 
-        });
+          temperature: 0.0,
+        };
+        if (speakLangCode) {
+          whisperOptions.language = speakLangCode;
+        }
+        const transcription = await openai.audio.transcriptions.create(whisperOptions);
         userText = transcription.text;
       } finally {
-        try { fs.unlinkSync(tempFilePath); } catch (e) {} 
+        try { fs.unlinkSync(tempFilePath); } catch (e) {}
       }
+      const transcribeMs = Date.now() - t0;
 
       if (!userText || userText.length < 2) return NextResponse.json({ success: false, error: "No voice detected" });
 
-      // 2. Sea Lion (Think with Forced Language)
-      const aiText = await querySeaLion(userText, [], langCode);
+      // If transcribeOnly, return just the text for user review
+      if (transcribeOnly) {
+        return NextResponse.json({ success: true, userText, timings: { transcribe: transcribeMs } });
+      }
 
-      // 3. TTS (Speak)
+      // 2. Sea Lion (Translate)
+      const t1 = Date.now();
+      const aiText = await querySeaLion(userText, [], replyLangCode);
+      const translateMs = Date.now() - t1;
+
+      // 3. TTS (Speak) — strip URLs and markdown so they aren't read aloud
+      const t2 = Date.now();
+      const ttsText = aiText
+        .replace(/\[([^\]]+)\]\(https?:\/\/[^\)]+\)/g, '$1')
+        .replace(/https?:\/\/[^\s]+/g, '')
+        .replace(/\*\*/g, '')
+        .replace(/\n{3,}/g, '\n\n')
+        .trim();
       const mp3Response = await openai.audio.speech.create({
         model: 'tts-1-hd',
-        voice: 'alloy', 
-        input: aiText,
+        voice: 'alloy',
+        input: ttsText || aiText,
       });
+      const ttsMs = Date.now() - t2;
 
       const mp3Buffer = Buffer.from(await mp3Response.arrayBuffer());
-      
+
       return NextResponse.json({
         success: true,
         userText,
         message: aiText,
-        audioBase64: mp3Buffer.toString('base64')
+        audioBase64: mp3Buffer.toString('base64'),
+        timings: { transcribe: transcribeMs, translate: translateMs, tts: ttsMs, total: transcribeMs + translateMs + ttsMs }
       });
     } 
     
     // --- TEXT FLOW ---
     else {
-      const { message, conversationHistory, useStreaming, language } = await request.json();
-      
+      const { message, conversationHistory, useStreaming, language, replyLanguage, withAudio } = await request.json();
+      const langCode = replyLanguage || language;
+
       if (useStreaming) {
-         // Force system prompt for streaming too
-         const targetLangName = LANGUAGE_MAP[language] || "English";
-         const systemPrompt = `You are a helpful assistant. You MUST reply in ${targetLangName} script ONLY. Do NOT include Romanized text or English translations.`;
-         
+         const targetLangName = LANGUAGE_MAP[langCode] || "English";
+         const systemPrompt = `You are a translator. Translate the user's text into ${targetLangName}. Output ONLY the translation in native ${targetLangName} script. No explanations, no labels, no Romanization.`;
+
          const apiUrl = `${SEA_LION_API_URL}/stream`;
          const response = await fetch(apiUrl, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ prompt: message, system: systemPrompt })
          });
-         
+
          return new Response(response.body, {
             headers: {
                'Content-Type': 'text/event-stream',
@@ -174,8 +179,36 @@ export async function POST(request) {
          });
       }
 
-      const result = await querySeaLion(message, conversationHistory, language);
-      return NextResponse.json({ message: result });
+      const t1 = Date.now();
+      const aiText = await querySeaLion(message, conversationHistory, langCode);
+      const translateMs = Date.now() - t1;
+
+      // If withAudio, also generate TTS
+      if (withAudio) {
+        const t2 = Date.now();
+        const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+        const ttsText = aiText
+          .replace(/\[([^\]]+)\]\(https?:\/\/[^\)]+\)/g, '$1')
+          .replace(/https?:\/\/[^\s]+/g, '')
+          .replace(/\*\*/g, '')
+          .replace(/\n{3,}/g, '\n\n')
+          .trim();
+        const mp3Response = await openai.audio.speech.create({
+          model: 'tts-1-hd',
+          voice: 'alloy',
+          input: ttsText || aiText,
+        });
+        const ttsMs = Date.now() - t2;
+        const mp3Buffer = Buffer.from(await mp3Response.arrayBuffer());
+        return NextResponse.json({
+          success: true,
+          message: aiText,
+          audioBase64: mp3Buffer.toString('base64'),
+          timings: { translate: translateMs, tts: ttsMs, total: translateMs + ttsMs }
+        });
+      }
+
+      return NextResponse.json({ message: aiText });
     }
 
   } catch (error) {
