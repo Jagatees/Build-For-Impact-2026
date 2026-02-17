@@ -4,7 +4,6 @@ import { useState, useRef, useEffect } from 'react'
 import { AudioRecorder } from '@/utils/audio-recorder'
 
 const languages = [
-  { code: 'auto', name: 'Auto-detect' },
   { code: 'en', name: 'English' },
   { code: 'ta', name: 'Tamil' },
   { code: 'ms', name: 'Malay' },
@@ -81,7 +80,7 @@ export default function VoiceChat() {
   const [isLoading, setIsLoading] = useState(false)
   const [isRecording, setIsRecording] = useState(false)
   const [useStreaming, setUseStreaming] = useState(true)
-  const [speakLanguage, setSpeakLanguage] = useState('auto')
+  const [speakLanguage, setSpeakLanguage] = useState('en')
   const [replyLanguage, setReplyLanguage] = useState('en')
   const [processingStep, setProcessingStep] = useState(null)
   const [pendingTranscript, setPendingTranscript] = useState(null)
